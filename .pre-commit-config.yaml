@@ -10,11 +10,7 @@ repos:
         args:
           - --unsafe
       - id: end-of-file-fixer
-        exclude: |
-            (?x)^(
-                frontend/src/client/.*|
-                backend/app/email-templates/.*
-            )$
+        exclude: ^frontend/src/client/.*
       - id: trailing-whitespace
         exclude: ^frontend/src/client/.*
   - repo: https://github.com/crate-ci/typos
@@ -65,13 +61,6 @@ repos:
         pass_filenames: false
         language: unsupported
         files: ^backend/app/.*\.py$|^backend/pyproject\.toml$|^uv\.lock$|^frontend/openapi-ts\.config\.ts$|^scripts/generate-client\.sh$
-
-      - id: add-release-date
-        language: unsupported
-        name: add date to latest release header
-        entry: uv run python scripts/add_latest_release_date.py
-        files: ^release-notes\.md$
-        pass_filenames: false
 
       - id: zizmor
         name: zizmor

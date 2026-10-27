@@ -1,11 +1,11 @@
-# FastAPI Project - Docker Compose Deployment
+# VisiSOP - Docker Compose Deployment
 
 You can deploy the project to your own remote server with Docker Compose. The deployment configuration includes Traefik to handle HTTPS and route incoming traffic to the application.
 
 ## Preparation
 
 * Have a remote server ready and available.
-* Configure DNS records pointing to the server for the application domain and any supporting service subdomains you want to expose, such as `fastapi-project.example.com` and `adminer.fastapi-project.example.com`.
+* Configure DNS records pointing to the server for the application domain and any supporting service subdomains you want to expose, such as `visisop.example.com` and `adminer.visisop.example.com`.
 * Install and configure [Docker](https://docs.docker.com/engine/install/) on the remote server (Docker Engine, not Docker Desktop).
 
 ## Copy the Code
@@ -20,32 +20,22 @@ The `--filter=":- .gitignore"` option tells `rsync` to use the same ignore rules
 
 ### Environment Variables
 
-Set the application domain, project name, and first superuser email:
+Set the application domain and project name:
 
 ```bash
-export DOMAIN=fastapi-project.example.com
-export PROJECT_NAME="Full Stack FastAPI Project"
-export FIRST_SUPERUSER=admin@example.com
+export DOMAIN=visisop.example.com
+export PROJECT_NAME="VisiSOP"
 ```
 
-You can also configure these environment variables as needed:
-
-* `SMTP_HOST`: The SMTP server host from your email provider.
-* `SMTP_USER`: The SMTP server user.
-* `EMAILS_FROM_EMAIL`: The email account used to send emails.
-* `SENTRY_DSN`: The DSN for Sentry.
+To enable Sentry, set `SENTRY_DSN`.
 
 ### Secrets
 
-Generate and set secure values for the database password, token signing key, and first superuser password:
+Generate and set a secure value for the database password:
 
 ```bash
 export POSTGRES_PASSWORD="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
-export SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
-export FIRST_SUPERUSER_PASSWORD="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
 ```
-
-To use an authenticated email provider, also set `SMTP_PASSWORD`.
 
 ## Deploy
 
@@ -72,23 +62,12 @@ In the repository, go to **Settings** > **Secrets and variables** > **Actions** 
 
 * `DOMAIN`
 * `PROJECT_NAME`
-* `FIRST_SUPERUSER`
-
-To enable emails, add these optional repository variables:
-
-* `SMTP_HOST`
-* `SMTP_USER`
-* `EMAILS_FROM_EMAIL`
 
 To enable Sentry, add the optional `SENTRY_DSN` repository variable.
 
-Add these repository secrets:
+Add this repository secret:
 
 * `POSTGRES_PASSWORD`
-* `SECRET_KEY`
-* `FIRST_SUPERUSER_PASSWORD`
-
-To use an authenticated email provider, add the optional `SMTP_PASSWORD` repository secret.
 
 ### Install a Self-Hosted Runner
 
@@ -120,10 +99,10 @@ When the runner is online, open the repository's **Actions** tab, select **Deplo
 
 ## URLs
 
-Replace `fastapi-project.example.com` with your domain.
+Replace `visisop.example.com` with your domain.
 
-Application (frontend and API): `https://fastapi-project.example.com`
+Application (frontend and API): `https://visisop.example.com`
 
-Interactive API docs: `https://fastapi-project.example.com/docs`
+Interactive API docs: `https://visisop.example.com/docs`
 
-Adminer: `https://adminer.fastapi-project.example.com`
+Adminer: `https://adminer.visisop.example.com`
