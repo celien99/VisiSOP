@@ -6,7 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 VisiSOP is a clean full-stack skeleton: FastAPI + SQLModel + PostgreSQL on the backend, React 19 + Vite + TanStack Router/Query + Tailwind/shadcn on the frontend. The built frontend is served by FastAPI on the same origin, and the TypeScript API client is generated from the backend's OpenAPI schema. Python 3.14 managed with `uv`; JS with `bun`.
 
-There is no domain logic: the only API endpoint is `/api/v1/utils/health-check/`, and the frontend is a single page. Add models in `backend/app/models.py`, routes in `backend/app/api/routes/`, and pages in `frontend/src/routes/`.
+There is no domain logic: the only API endpoint is `/api/utils/health-check/`, and the frontend is a single page. Add models in `backend/app/models.py`, routes in `backend/app/api/routes/`, and pages in `frontend/src/routes/`.
+
+The architecture baseline is `docs/AI_SOP_Platform_Architecture_v2.0.md` (how the system runs); `docs/AI_SOP_Architecture_Design_v1.1.md` holds the strict constraints v2.0 does not expand (transition matrix, execution resolution, retention). `docs/implementation/README.md` splits them into work packages with repository paths and records decisions the baselines leave open; read the matching brief before implementing a package.
 
 ## Setup
 
@@ -82,7 +84,7 @@ This imports `app.main` to dump OpenAPI to `frontend/openapi.json`, runs `bun ru
 
 ### Backend
 
-- `app/main.py` — builds the app, CORS for `FRONTEND_HOST`, mounts the API at `settings.API_V1_STR` (`/api/v1`), and serves the built SPA from `app/frontend` via `app.frontend("/")`.
+- `app/main.py` — builds the app, CORS for `FRONTEND_HOST`, mounts the API at `settings.API_PREFIX` (`/api`), and serves the built SPA from `app/frontend` via `app.frontend("/")`.
 - `app/api/main.py` — aggregates routers. Add new routers here.
 - `app/api/deps.py` — `SessionDep` (database session dependency).
 - `app/models.py` — SQLModel models. It currently only re-exports `SQLModel` so Alembic autogenerate has a metadata target; add table models here.
@@ -101,3 +103,12 @@ This imports `app.main` to dump OpenAPI to `frontend/openapi.json`, runs `bun ru
 
 - Backend: pytest with `TestClient`; `tests/conftest.py` provides the `client` fixture.
 - Frontend: Playwright specs in `frontend/tests`; the config starts Vite automatically.
+
+## Code quality — required for every change
+
+High code quality is non-negotiable. Use these skills as part of normal work, not as an afterthought:
+
+- **`/ponytail:ponytail`** (default working mode) — laziest solution that _works_s comments, defensive try/catch on trusted paths, `any` casts that paper over types, deep nesting that should be early returns, anything inconsistent with the surrounding file.
+- **`/code-review`** — run on the diff **before merging**; fix the findings (use `/code-review ultra` for branch-wide cloud review).
+- **`/simplify`** — quality-only pass for reuse/simplification/efficiency when not hunting bugs.
+- **Superpowers**: `systematic-debugging` (root cause before any fix), `test-driven-development` (test-first for features/bugfixes), `verification-before-completion` (run the command and show real output before claiming done), `requesting-code-review` before merge.
