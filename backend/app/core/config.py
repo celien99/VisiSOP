@@ -9,7 +9,7 @@ class Settings(BaseSettings):
         env_ignore_empty=True,
         extra="ignore",
     )
-    API_V1_STR: str = "/api/v1"
+    API_PREFIX: str = "/api"
     FRONTEND_HOST: str = "http://localhost:5173"
     PROJECT_NAME: str
     SENTRY_DSN: HttpUrl | None = None

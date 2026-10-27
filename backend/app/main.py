@@ -20,7 +20,7 @@ if settings.SENTRY_DSN:
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    openapi_url=f"{settings.API_PREFIX}/openapi.json",
     generate_unique_id_function=custom_generate_unique_id,
 )
 
@@ -32,5 +32,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(api_router, prefix=settings.API_PREFIX)
 app.frontend("/", directory=FRONTEND_DIR)

@@ -8,7 +8,7 @@ export type utilsHealthCheckData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/api/v1/utils/health-check/';
+    url: '/api/utils/health-check/';
 };
 
 export type utilsHealthCheckResponses = {

@@ -25,7 +25,7 @@ export class UtilsService {
     public static healthCheck<ThrowOnError extends boolean = true>(options?: Options<utilsHealthCheckData, ThrowOnError>) {
         return (options?.client ?? client).get<utilsHealthCheckResponses, unknown, ThrowOnError>({
             responseType: 'json',
-            url: '/api/v1/utils/health-check/',
+            url: '/api/utils/health-check/',
             ...options
         });
     }
