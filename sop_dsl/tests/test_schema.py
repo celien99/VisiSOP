@@ -53,6 +53,13 @@ def test_optional_step_requires_skip_if() -> None:
         SOPSpec.model_validate(data)
 
 
+def test_required_step_cannot_skip() -> None:
+    data = valid_spec()
+    data["steps"][0]["skip_if"] = {"event_type": "skip_now"}
+    with pytest.raises(ValidationError):
+        SOPSpec.model_validate(data)
+
+
 def test_confidence_range_is_enforced() -> None:
     data = valid_spec()
     data["steps"][0]["completion"]["all"][0]["min_confidence"] = 1.5

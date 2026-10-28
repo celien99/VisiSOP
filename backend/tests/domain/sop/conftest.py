@@ -323,6 +323,36 @@ def state_all_completed(graph_ab: SOPGraph) -> ExecutionState:
 
 
 @pytest.fixture
+def skip_graph() -> SOPGraph:
+    return make_graph(
+        [
+            step_spec("a"),
+            step_spec(
+                "optional",
+                depends_on=("a",),
+                required=False,
+                skip_if={"all_steps_completed": ["a"]},
+            ),
+            step_spec("after", depends_on=("optional",)),
+        ]
+    )
+
+
+@pytest.fixture
+def skip_event_graph() -> SOPGraph:
+    return make_graph(
+        [
+            step_spec(
+                "optional",
+                required=False,
+                skip_if={"event_type": "skip_now"},
+            ),
+            step_spec("after", depends_on=("optional",)),
+        ]
+    )
+
+
+@pytest.fixture
 def failure_graph() -> SOPGraph:
     return make_graph(
         [

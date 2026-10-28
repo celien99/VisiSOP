@@ -86,6 +86,8 @@ def _event_rule(step: CompiledStep) -> EventRuleCompletion | None:
 def _references_event(step: CompiledStep, event_type: str) -> bool:
     if step.failure is not None and step.failure.event_type == event_type:
         return True
+    if step.skip_if is not None and step.skip_if.event_type == event_type:
+        return True
     rule = _event_rule(step)
     if rule is None:
         return False
@@ -192,6 +194,20 @@ def _dependencies_satisfied(step: CompiledStep, steps: Mapping[str, StepState]) 
     return all(steps[dep].status in _SATISFIED_STEP_STATUSES for dep in step.depends_on)
 
 
+def _settle_skip_reason(
+    step: CompiledStep, steps: Mapping[str, StepState]
+) -> str | None:
+    skip_if = step.skip_if
+    if skip_if is None or not skip_if.all_steps_completed:
+        return None
+    if all(
+        steps[ref].status in _SATISFIED_STEP_STATUSES
+        for ref in skip_if.all_steps_completed
+    ):
+        return "all_steps_completed:" + ",".join(skip_if.all_steps_completed)
+    return None
+
+
 def _settle(
     graph: SOPGraph, steps: dict[str, StepState], now: datetime
 ) -> list[StepTransition]:
@@ -204,6 +220,25 @@ def _settle(
             if step_state.status is not StepStatus.PENDING:
                 continue
             compiled = graph.steps[key]
+            skip_reason = _settle_skip_reason(compiled, steps)
+            if skip_reason is not None:
+                steps[key] = dataclasses.replace(
+                    step_state,
+                    status=StepStatus.SKIPPED,
+                    reason_code=ReasonCode.AUTO_SKIP,
+                    skipped_reason=skip_reason,
+                )
+                transitions.append(
+                    StepTransition(
+                        step_key=key,
+                        from_status=StepStatus.PENDING,
+                        to_status=StepStatus.SKIPPED,
+                        reason_code=ReasonCode.AUTO_SKIP,
+                        detail=skip_reason,
+                    )
+                )
+                changed = True
+                continue
             if not _dependencies_satisfied(compiled, steps):
                 continue
             steps[key] = dataclasses.replace(
@@ -367,6 +402,32 @@ def apply(
                 for condition in _conditions_for_event(compiled, event.event_type)
             ),
         )
+
+        skip_if = compiled.skip_if
+        if (
+            step_state.status in (StepStatus.ACTIVE, StepStatus.PENDING)
+            and skip_if is not None
+            and skip_if.event_type == event.event_type
+        ):
+            detail = f"event_type:{event.event_type}"
+            updates.append(EvidenceUpdate(step_key=key, event=matched))
+            steps[key] = dataclasses.replace(
+                step_state,
+                status=StepStatus.SKIPPED,
+                reason_code=ReasonCode.AUTO_SKIP,
+                skipped_reason=detail,
+            )
+            transitions.append(
+                StepTransition(
+                    step_key=key,
+                    from_status=step_state.status,
+                    to_status=StepStatus.SKIPPED,
+                    reason_code=ReasonCode.AUTO_SKIP,
+                    matched_event_ids=(event.event_id,),
+                    detail=detail,
+                )
+            )
+            continue
 
         if step_state.status is StepStatus.PENDING and not _dependencies_satisfied(
             compiled, steps

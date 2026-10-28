@@ -106,6 +106,8 @@ class SOPStepSpec(_StrictModel):
     def _check_optional_and_join(self) -> Self:
         if not self.required and self.skip_if is None:
             raise ValueError("optional steps must declare skip_if")
+        if self.required and self.skip_if is not None:
+            raise ValueError("required steps cannot declare skip_if")
         if self.join_policy is not None and not self.depends_on:
             raise ValueError("join_policy requires at least one dependency")
         return self
