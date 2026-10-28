@@ -1,9 +1,10 @@
 import dataclasses
 from datetime import timedelta
 
+from contracts.enums import ReasonCode
+
 from app.domain.sop.engine import apply, initial_state, timed_out
 from app.domain.sop.model import ExecutionStatus, StepStatus
-from contracts.enums import ReasonCode
 from tests.domain.sop.conftest import T0, make_event
 
 
@@ -40,7 +41,4 @@ def test_late_event_after_timeout_does_not_complete(
     graph_ab, state_with_a_timed_out
 ) -> None:
     result = apply(graph_ab, state_with_a_timed_out, make_event("a_done"), T0)
-    assert all(
-        t.to_status is not StepStatus.COMPLETED
-        for t in result.step_transitions
-    )
+    assert all(t.to_status is not StepStatus.COMPLETED for t in result.step_transitions)

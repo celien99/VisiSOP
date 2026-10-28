@@ -1,10 +1,10 @@
 from typing import Any
 
 import pytest
-
-from app.domain.sop.compiler import compile_spec
 from sop_dsl.schema import SOPSpec
 from sop_dsl.validate import DSLValidationError
+
+from app.domain.sop.compiler import compile_spec
 
 
 def spec_from(data: dict[str, Any]) -> SOPSpec:

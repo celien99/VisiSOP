@@ -1,6 +1,7 @@
 import dataclasses
 
 import pytest
+from contracts.enums import ProcessingResult, ReasonCode
 
 from app.domain.sop.model import (
     AlarmIntent,
@@ -9,7 +10,6 @@ from app.domain.sop.model import (
     StepStatus,
     TransitionResult,
 )
-from contracts.enums import ProcessingResult, ReasonCode
 
 
 def test_step_status_values() -> None:

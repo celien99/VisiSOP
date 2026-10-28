@@ -1,8 +1,9 @@
 import dataclasses
 
+from contracts.enums import ReasonCode
+
 from app.domain.sop.engine import apply, initial_state
 from app.domain.sop.model import StepStatus
-from contracts.enums import ReasonCode
 from tests.domain.sop.conftest import T0, make_event
 
 

@@ -1,6 +1,7 @@
+from contracts.enums import ReasonCode
+
 from app.domain.sop.engine import apply, derive_execution_status, initial_state
 from app.domain.sop.model import ExecutionStatus, StepStatus
-from contracts.enums import ReasonCode
 from tests.domain.sop.conftest import T0, make_event
 
 
@@ -36,8 +37,6 @@ def test_failure_rule_marks_step_failed(failure_graph) -> None:
 
 
 def test_alarm_categories_are_set(graph_ab) -> None:
-    result = apply(
-        graph_ab, initial_state(graph_ab, "e", T0), make_event("b_done"), T0
-    )
+    result = apply(graph_ab, initial_state(graph_ab, "e", T0), make_event("b_done"), T0)
     assert result.alarms[0].category == "PROCESS_COMPLIANCE"
     assert result.alarms[0].severity == "HIGH"

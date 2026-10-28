@@ -5,6 +5,9 @@ from types import MappingProxyType
 from typing import Any
 
 import pytest
+from contracts.enums import ReasonCode
+from contracts.events import ModelRef, RoutedSOPEvent
+from sop_dsl.schema import SOPSpec
 
 from app.domain.sop.compiler import compile_spec
 from app.domain.sop.engine import apply, initial_state
@@ -15,9 +18,6 @@ from app.domain.sop.model import (
     StepState,
     StepStatus,
 )
-from contracts.enums import ReasonCode
-from contracts.events import ModelRef, RoutedSOPEvent
-from sop_dsl.schema import SOPSpec
 
 T0 = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
 
@@ -219,9 +219,7 @@ def not_graph() -> SOPGraph:
                 completion={
                     "mode": "EVENT_RULE",
                     "all": [{"event_type": "present", "min_confidence": 0.9}],
-                    "not": [
-                        {"event_type": "part_removed", "min_confidence": 0.9}
-                    ],
+                    "not": [{"event_type": "part_removed", "min_confidence": 0.9}],
                 },
             )
         ]
@@ -246,9 +244,7 @@ def state_with_first_event(stable_graph: SOPGraph) -> ExecutionState:
 
 @pytest.fixture
 def within_graph() -> SOPGraph:
-    return make_graph(
-        [step_spec("a", completion=event_rule("present", within_ms=500))]
-    )
+    return make_graph([step_spec("a", completion=event_rule("present", within_ms=500))])
 
 
 @pytest.fixture
@@ -264,9 +260,7 @@ def role_graph() -> SOPGraph:
 
 @pytest.fixture
 def state_with_a_done(graph_ab: SOPGraph) -> ExecutionState:
-    return advance(
-        graph_ab, initial_state(graph_ab, "e", T0), [make_event("a_done")]
-    )
+    return advance(graph_ab, initial_state(graph_ab, "e", T0), [make_event("a_done")])
 
 
 @pytest.fixture
@@ -324,15 +318,11 @@ def state_all_completed(graph_ab: SOPGraph) -> ExecutionState:
 
 
 def state_with_left_done(graph: SOPGraph) -> ExecutionState:
-    return advance(
-        graph, initial_state(graph, "e", T0), [make_event("left_done")]
-    )
+    return advance(graph, initial_state(graph, "e", T0), [make_event("left_done")])
 
 
 def state_with_left_failed(graph: SOPGraph) -> ExecutionState:
-    return advance(
-        graph, initial_state(graph, "e", T0), [make_event("left_fail")]
-    )
+    return advance(graph, initial_state(graph, "e", T0), [make_event("left_fail")])
 
 
 @pytest.fixture

@@ -1,9 +1,10 @@
 import copy
 from datetime import timedelta
 
+from contracts.enums import ProcessingResult, ReasonCode
+
 from app.domain.sop.engine import apply, initial_state
 from app.domain.sop.model import StepStatus
-from contracts.enums import ProcessingResult, ReasonCode
 from tests.domain.sop.conftest import T0, make_event
 
 
@@ -33,9 +34,7 @@ def test_atomic_pending_to_completed(graph_ab, state_with_a_completed) -> None:
 
 
 def test_out_of_order_event_does_not_advance(graph_ab) -> None:
-    result = apply(
-        graph_ab, initial_state(graph_ab, "e", T0), make_event("b_done"), T0
-    )
+    result = apply(graph_ab, initial_state(graph_ab, "e", T0), make_event("b_done"), T0)
     assert result.step_transitions == ()
     assert result.alarms[0].reason_code is ReasonCode.OUT_OF_ORDER
 
@@ -54,9 +53,7 @@ def test_low_confidence_does_not_complete(graph_ab) -> None:
         make_event("a_done", confidence=0.5),
         T0,
     )
-    assert all(
-        t.to_status is not StepStatus.COMPLETED for t in result.step_transitions
-    )
+    assert all(t.to_status is not StepStatus.COMPLETED for t in result.step_transitions)
     assert result.evidence_updates[0].event.accepted is False
 
 

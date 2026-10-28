@@ -19,8 +19,7 @@ def test_not_rule_blocks_completion(not_graph) -> None:
     state = initial_state(not_graph, "e", T0)
     blocked = apply(not_graph, state, make_event("part_removed"), T0)
     assert all(
-        t.to_status is not StepStatus.COMPLETED
-        for t in blocked.step_transitions
+        t.to_status is not StepStatus.COMPLETED for t in blocked.step_transitions
     )
 
 
@@ -35,9 +34,7 @@ def test_stable_for_ms_needs_a_span(stable_graph, state_with_first_event) -> Non
         ),
         T0 + timedelta(milliseconds=100),
     )
-    assert all(
-        t.to_status is not StepStatus.COMPLETED for t in early.step_transitions
-    )
+    assert all(t.to_status is not StepStatus.COMPLETED for t in early.step_transitions)
     late = apply(
         stable_graph,
         state_with_first_event,
@@ -58,9 +55,7 @@ def test_within_ms_rejects_late_evidence(within_graph) -> None:
         make_event("present", occurred_at=T0 + timedelta(milliseconds=600)),
         T0 + timedelta(milliseconds=600),
     )
-    assert all(
-        t.to_status is not StepStatus.COMPLETED for t in result.step_transitions
-    )
+    assert all(t.to_status is not StepStatus.COMPLETED for t in result.step_transitions)
 
 
 def test_source_camera_role_is_enforced(role_graph) -> None:
@@ -70,9 +65,7 @@ def test_source_camera_role_is_enforced(role_graph) -> None:
         make_event("present", camera_role="hands"),
         T0,
     )
-    assert all(
-        t.to_status is not StepStatus.COMPLETED for t in wrong.step_transitions
-    )
+    assert all(t.to_status is not StepStatus.COMPLETED for t in wrong.step_transitions)
     right = apply(
         role_graph,
         initial_state(role_graph, "e", T0),
