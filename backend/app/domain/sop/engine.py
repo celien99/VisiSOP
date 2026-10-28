@@ -95,23 +95,84 @@ def _trigger_conditions(
     )
 
 
-def _condition_accepts(condition: EventCondition, event: MatchedEvent) -> bool:
-    return (
-        event.event_type == condition.event_type
-        and event.confidence >= condition.min_confidence
+def _conditions_for_event(
+    step: CompiledStep, event_type: str
+) -> tuple[EventCondition, ...]:
+    rule = _event_rule(step)
+    if rule is None:
+        return ()
+    return tuple(
+        condition
+        for condition in (*rule.all, *rule.any, *rule.not_)
+        if condition.event_type == event_type
     )
 
 
-def _all_satisfied(
-    completion: CompletionSpec, events: tuple[MatchedEvent, ...]
+def _single_event_matches(
+    condition: EventCondition, event: MatchedEvent, activated_at: datetime | None
 ) -> bool:
-    if not isinstance(completion, EventRuleCompletion) or not completion.all:
+    if event.event_type != condition.event_type:
         return False
-    accepted = tuple(event for event in events if event.accepted)
-    return all(
-        any(_condition_accepts(condition, event) for event in accepted)
+    if event.confidence < condition.min_confidence:
+        return False
+    if (
+        condition.source_camera_role is not None
+        and event.camera_role != condition.source_camera_role
+    ):
+        return False
+    if condition.within_ms is not None and (
+        activated_at is None
+        or event.occurred_at
+        > activated_at + timedelta(milliseconds=condition.within_ms)
+    ):
+        return False
+    return True
+
+
+def _condition_matches(
+    condition: EventCondition,
+    events: tuple[MatchedEvent, ...],
+    activated_at: datetime | None,
+) -> bool:
+    eligible = [
+        event
+        for event in events
+        if event.accepted and _single_event_matches(condition, event, activated_at)
+    ]
+    if not eligible:
+        return False
+    if condition.stable_for_ms <= 0:
+        return True
+    times = [event.occurred_at for event in eligible]
+    return max(times) - min(times) >= timedelta(milliseconds=condition.stable_for_ms)
+
+
+def _rule_satisfied(
+    completion: CompletionSpec,
+    events: tuple[MatchedEvent, ...],
+    activated_at: datetime | None,
+) -> bool:
+    if not isinstance(completion, EventRuleCompletion):
+        return False
+    if not completion.all and not completion.any:
+        return False
+    all_satisfied = all(
+        _condition_matches(condition, events, activated_at)
         for condition in completion.all
     )
+    any_satisfied = (
+        any(
+            _condition_matches(condition, events, activated_at)
+            for condition in completion.any
+        )
+        if completion.any
+        else True
+    )
+    not_satisfied = not any(
+        _condition_matches(condition, events, activated_at)
+        for condition in completion.not_
+    )
+    return all_satisfied and any_satisfied and not_satisfied
 
 
 def _dependencies_satisfied(step: CompiledStep, steps: Mapping[str, StepState]) -> bool:
@@ -185,12 +246,12 @@ def apply(
             detail=f"duplicate event_id: {event.event_id}",
         )
 
-    references = [
-        (key, _trigger_conditions(graph.steps[key], event.event_type))
+    reference_keys = [
+        key
         for key in graph.order
         if _references_event(graph.steps[key], event.event_type)
     ]
-    if not references:
+    if not reference_keys:
         alarm = _alarm(ReasonCode.UNEXPECTED_STEP, event, None)
         return TransitionResult(
             alarms=(alarm,),
@@ -202,17 +263,18 @@ def apply(
     updates: list[EvidenceUpdate] = []
     transitions: list[StepTransition] = []
     alarms: list[AlarmIntent] = []
-
     candidate = _matched_event(event, accepted=False)
-    for key, conditions in references:
-        if not conditions:
-            continue
-        accepted = any(
-            _condition_accepts(condition, candidate) for condition in conditions
-        )
-        matched = dataclasses.replace(candidate, accepted=accepted)
-        step_state = steps[key]
+
+    for key in reference_keys:
         compiled = graph.steps[key]
+        step_state = steps[key]
+        matched = dataclasses.replace(
+            candidate,
+            accepted=any(
+                _single_event_matches(condition, candidate, step_state.activated_at)
+                for condition in _conditions_for_event(compiled, event.event_type)
+            ),
+        )
 
         if step_state.status not in (StepStatus.ACTIVE, StepStatus.PENDING):
             continue
@@ -223,10 +285,14 @@ def apply(
             continue
 
         updates.append(EvidenceUpdate(step_key=key, event=matched))
-        if not accepted:
+        if not matched.accepted:
             continue
-        if not _all_satisfied(
-            compiled.completion, (*step_state.matched_events, matched)
+        if not _trigger_conditions(compiled, event.event_type):
+            continue
+        if not _rule_satisfied(
+            compiled.completion,
+            (*step_state.matched_events, matched),
+            step_state.activated_at,
         ):
             continue
 

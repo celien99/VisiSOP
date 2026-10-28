@@ -192,6 +192,76 @@ def graph_ab() -> SOPGraph:
 
 
 @pytest.fixture
+def any_graph() -> SOPGraph:
+    return make_graph(
+        [
+            step_spec(
+                "a",
+                completion={
+                    "mode": "EVENT_RULE",
+                    "any": [
+                        {"event_type": "a_done", "min_confidence": 0.9},
+                        {"event_type": "b_done", "min_confidence": 0.9},
+                    ],
+                },
+            )
+        ]
+    )
+
+
+@pytest.fixture
+def not_graph() -> SOPGraph:
+    return make_graph(
+        [
+            step_spec(
+                "a",
+                completion={
+                    "mode": "EVENT_RULE",
+                    "all": [{"event_type": "present", "min_confidence": 0.9}],
+                    "not": [
+                        {"event_type": "part_removed", "min_confidence": 0.9}
+                    ],
+                },
+            )
+        ]
+    )
+
+
+@pytest.fixture
+def stable_graph() -> SOPGraph:
+    return make_graph(
+        [step_spec("a", completion=event_rule("present", stable_for_ms=500))]
+    )
+
+
+@pytest.fixture
+def state_with_first_event(stable_graph: SOPGraph) -> ExecutionState:
+    return advance(
+        stable_graph,
+        initial_state(stable_graph, "e", T0),
+        [make_event("present")],
+    )
+
+
+@pytest.fixture
+def within_graph() -> SOPGraph:
+    return make_graph(
+        [step_spec("a", completion=event_rule("present", within_ms=500))]
+    )
+
+
+@pytest.fixture
+def role_graph() -> SOPGraph:
+    return make_graph(
+        [
+            step_spec(
+                "a", completion=event_rule("present", source_camera_role="overview")
+            )
+        ]
+    )
+
+
+@pytest.fixture
 def state_with_a_done(graph_ab: SOPGraph) -> ExecutionState:
     return advance(
         graph_ab, initial_state(graph_ab, "e", T0), [make_event("a_done")]
