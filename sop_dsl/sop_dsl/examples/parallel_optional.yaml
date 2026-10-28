@@ -1,0 +1,54 @@
+schema_version: "1.0"
+sop_key: "seat_assembly_parallel"
+version: 1
+name: "座椅并行装配流程"
+steps:
+  - key: "place_frame"
+    name: "放置骨架"
+    type: "ACTION"
+    required: true
+    depends_on: []
+    timeout_ms: 15000
+    completion:
+      mode: "EVENT_RULE"
+      all:
+        - event_type: "frame_placed"
+          min_confidence: 0.90
+
+  - key: "install_left_bolt"
+    name: "安装左侧螺栓"
+    type: "ACTION"
+    required: true
+    depends_on: ["place_frame"]
+    timeout_ms: 20000
+    completion:
+      mode: "EVENT_RULE"
+      all:
+        - event_type: "left_bolt_installed"
+          min_confidence: 0.92
+
+  - key: "install_right_bolt"
+    name: "安装右侧螺栓"
+    type: "ACTION"
+    required: false
+    depends_on: ["place_frame"]
+    timeout_ms: 20000
+    skip_if:
+      all_steps_completed: ["install_left_bolt"]
+    completion:
+      mode: "EVENT_RULE"
+      all:
+        - event_type: "right_bolt_installed"
+          min_confidence: 0.92
+
+  - key: "verify_bolts"
+    name: "确认螺栓完成"
+    type: "CHECKPOINT"
+    required: true
+    depends_on: ["install_left_bolt", "install_right_bolt"]
+    join_policy:
+      type: "ANY_OF_N"
+      n: 1
+    completion:
+      mode: "STATE_RULE"
+      any_steps_completed: ["install_left_bolt", "install_right_bolt"]

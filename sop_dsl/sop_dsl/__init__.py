@@ -12,10 +12,12 @@ from sop_dsl.schema import (
     StateRuleCompletion,
     StepType,
 )
+from sop_dsl.validate import DSLValidationError, ValidationIssue, validate_spec
 
 __all__ = [
     "CompletionMode",
     "CompletionSpec",
+    "DSLValidationError",
     "EventCondition",
     "EventRuleCompletion",
     "EvidenceSpec",
@@ -26,4 +28,6 @@ __all__ = [
     "SkipIf",
     "StateRuleCompletion",
     "StepType",
+    "ValidationIssue",
+    "validate_spec",
 ]

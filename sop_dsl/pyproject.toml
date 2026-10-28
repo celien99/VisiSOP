@@ -13,6 +13,8 @@ dev = [
     "mypy<3.0.0,>=1.8.0",
     "ty>=0.0.25",
     "ruff<1.0.0,>=0.16.0",
+    "pyyaml>=6.0",
+    "types-pyyaml>=6.0.12",
 ]
 
 [build-system]

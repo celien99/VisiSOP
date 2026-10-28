@@ -1,0 +1,57 @@
+schema_version: "1.0"
+sop_key: "seat_assembly_basic"
+version: 3
+name: "座椅基础装配流程"
+steps:
+  - key: "place_frame"
+    name: "放置骨架"
+    type: "ACTION"
+    required: true
+    depends_on: []
+    timeout_ms: 15000
+    completion:
+      mode: "EVENT_RULE"
+      all:
+        - event_type: "frame_placed"
+          min_confidence: 0.90
+          stable_for_ms: 500
+    evidence:
+      required: true
+      kind: "keyframe"
+
+  - key: "install_left_bolt"
+    name: "安装左侧螺栓"
+    type: "ACTION"
+    required: true
+    depends_on: ["place_frame"]
+    timeout_ms: 20000
+    completion:
+      mode: "EVENT_RULE"
+      all:
+        - event_type: "left_bolt_installed"
+          min_confidence: 0.92
+    evidence:
+      required: true
+      kind: "keyframe"
+
+  - key: "tighten_screw"
+    name: "拧紧螺栓"
+    type: "ACTION"
+    required: true
+    depends_on: ["install_left_bolt"]
+    timeout_ms: 20000
+    completion:
+      mode: "EVENT_RULE"
+      all:
+        - event_type: "both_bolts_present"
+          min_confidence: 0.92
+
+  - key: "verify_both_bolts"
+    name: "确认螺栓完成"
+    type: "CHECKPOINT"
+    required: true
+    depends_on: ["tighten_screw"]
+    join_policy: "ALL_REQUIRED"
+    completion:
+      mode: "STATE_RULE"
+      all_steps_completed: ["tighten_screw"]
