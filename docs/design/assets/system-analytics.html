@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600, initial-scale=1">
+<title>VisiSOP · 分析看板 — 设计稿</title>
+<link rel="stylesheet" href="system.css">
+<style>
+  .screen { grid-template-rows: 56px 52px 1fr 30px; }
+
+  .filters {
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 20px; border-bottom: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .filters .k { font-size: 12px; color: var(--muted); letter-spacing: .1em; margin-right: 2px; }
+  .chip {
+    height: 30px; padding: 0 13px; display: inline-flex; align-items: center;
+    font-size: 13px; color: var(--ink-2); text-decoration: none;
+    box-shadow: inset 0 0 0 1px var(--line-2);
+  }
+  .chip.on { background: var(--ink); color: #0c1011; box-shadow: none; font-weight: 600; }
+  .filters .div { width: 1px; height: 20px; background: var(--line-2); margin: 0 8px; }
+  .filters .meta { margin-left: auto; font-size: 12px; color: var(--muted); }
+
+  .body {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: 108px 338px minmax(0, 1fr);
+    gap: 14px;
+    padding: 10px;
+    min-height: 0;
+  }
+  .panel {
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line);
+    min-width: 0; min-height: 0;
+  }
+
+  /* ---------- stat tiles ---------- */
+  .stat { padding: 16px 18px 14px; display: flex; flex-direction: column; }
+  .stat .k { font-size: 12px; color: var(--muted); letter-spacing: .06em; }
+  .stat .v { margin-top: auto; font-stretch: 62%; font-size: 46px; font-weight: 700; line-height: 1; letter-spacing: -.01em; }
+  .stat .v small { font-size: 20px; font-weight: 600; margin-left: 3px; letter-spacing: 0; }
+  .stat .s { margin-top: 8px; font-size: 12px; color: var(--ink-2); }
+  .stat.att { box-shadow: inset 0 0 0 1px var(--line), inset 0 3px 0 var(--warn); }
+
+  /* ---------- panel heads ---------- */
+  .ph { display: flex; align-items: baseline; gap: 10px; }
+  .ph h3 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: .01em; }
+  .ph .sub { font-size: 12px; color: var(--muted); }
+  .ph .r { margin-left: auto; font-size: 12px; color: var(--muted); }
+
+  .trend { padding: 18px 20px; display: flex; flex-direction: column; }
+  .trend svg { display: block; width: 100%; height: 250px; margin-top: 8px; }
+  svg text { font-family: var(--sans); }
+
+  .pt .dot { opacity: 0; }
+  .pt:hover .dot { opacity: 1; }
+  .pt .tip { display: none; }
+  .pt:hover .tip { display: block; }
+  .pt .hit { fill: transparent; }
+
+  /* ---------- anomaly bars ---------- */
+  .bars { padding: 18px 20px; display: flex; flex-direction: column; }
+  .bars .rows { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; }
+  .bar-row { display: flex; align-items: center; gap: 12px; }
+  .bar-row .lb { width: 104px; flex: none; font-size: 13px; color: var(--ink-2); }
+  .bar-row .track { flex: 1; height: 18px; background: #1c2325; position: relative; }
+  .bar-row .fill { height: 18px; background: var(--series); }
+  .bar-row .val { width: 30px; flex: none; text-align: right; font-stretch: 62%; font-size: 17px; font-weight: 700; }
+  .bars .foot { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+
+  /* ---------- camera meters ---------- */
+  .meters { padding: 18px 20px; display: flex; flex-direction: column; }
+  .meters .rows { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; }
+  .m-row { display: flex; align-items: center; gap: 10px; }
+  .m-row .lb { width: 88px; flex: none; font-size: 12px; color: var(--ink-2); }
+  .m-row .track { flex: 1; height: 8px; background: #1c2325; position: relative; }
+  .m-row .fill { height: 8px; background: var(--series); }
+  .m-row .limit { position: absolute; top: -3px; width: 1px; height: 14px; background: #6d7779; }
+  .m-row .val { width: 46px; flex: none; text-align: right; font-stretch: 62%; font-size: 15px; font-weight: 700; color: var(--ink-2); }
+  .m-row.low .fill { background: var(--warn); }
+  .m-row.low .val { color: var(--warn); }
+  .m-row .warn { width: 13px; height: 13px; flex: none; color: var(--warn); }
+  .m-row .warn.blank { visibility: hidden; }
+  .meters .foot { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+  .meters .foot b { color: var(--warn); font-weight: 600; }
+
+  /* ---------- table ---------- */
+  .table { padding: 18px 20px; display: flex; flex-direction: column; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th {
+    text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .1em;
+    color: var(--muted); padding: 0 0 9px; border-bottom: 1px solid var(--line-2);
+  }
+  td { padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--ink-2); }
+  td.t { font-stretch: 62%; font-size: 15px; font-weight: 700; color: var(--ink); }
+  td.ev { color: var(--muted); font-size: 12px; }
+  td.ev .miss { color: var(--warn); }
+  .state { font-size: 11px; padding: 3px 7px; }
+  .table .foot { margin-top: auto; padding-top: 12px; font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; }
+  .table .foot a { color: var(--ink-2); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="screen">
+
+  <header class="top">
+    <span class="mark"></span>
+    <span class="brand">VISISOP</span>
+    <span class="sep"></span>
+    <nav class="nav">
+      <a href="system-monitor.html">监控墙</a>
+      <a class="on" href="#">看板</a>
+      <a href="#">记录</a>
+      <a href="#">标准</a>
+    </nav>
+    <div class="right">
+      <span class="conn"><i></i>网关正常 · 5 / 6 机位有画面</span>
+      <span class="clock">12:42</span>
+      <span class="who">当班班长</span>
+    </div>
+  </header>
+
+  <div class="filters">
+    <span class="k">时间</span>
+    <a class="chip on" href="#">本班次</a>
+    <a class="chip" href="#">今天</a>
+    <a class="chip" href="#">近 7 天</a>
+    <span class="div"></span>
+    <span class="k">区域</span>
+    <a class="chip on" href="#">全部</a>
+    <a class="chip" href="#">一车间</a>
+    <a class="chip" href="#">二车间</a>
+    <span class="meta">数据截至 12:42:08 · 统计口径：已写入记录的作业</span>
+  </div>
+
+  <div class="body">
+
+    <section class="panel stat" style="grid-column: span 3">
+      <span class="k">作业次数</span>
+      <span class="v">1,284</span>
+      <span class="s">6 个机位 · 08:00 起</span>
+    </section>
+
+    <section class="panel stat" style="grid-column: span 3">
+      <span class="k">判定异常</span>
+      <span class="v">17</span>
+      <span class="s">其中 4 件仍在等待处理</span>
+    </section>
+
+    <section class="panel stat att" style="grid-column: span 3">
+      <span class="k">待确认</span>
+      <span class="v">23</span>
+      <span class="s">现在积压 2 件 · 最长等了 6 分</span>
+    </section>
+
+    <section class="panel stat" style="grid-column: span 3">
+      <span class="k">平均确认时长</span>
+      <span class="v">4<small>分</small>12<small>秒</small></span>
+      <span class="s">从提出到有人处理</span>
+    </section>
+
+    <!-- trend -->
+    <section class="panel trend" style="grid-column: span 8">
+      <div class="ph">
+        <h3>检测量</h3>
+        <span class="sub">每 30 分钟 · 本班次已完成的区间</span>
+        <span class="r">12:00–12:30 还在统计，未计入</span>
+      </div>
+
+      <svg viewBox="0 0 995 250" role="img" aria-label="本班次每 30 分钟检测量：08:00 起 41 次，逐步上升到 11:30 的 107 次">
+        <defs>
+          <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#4b93d8" stop-opacity=".28"/>
+            <stop offset="100%" stop-color="#4b93d8" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+
+        <!-- grid -->
+        <g stroke="#252d2f" stroke-width="1">
+          <line x1="46" y1="196" x2="975" y2="196"/>
+          <line x1="46" y1="150.5" x2="975" y2="150.5"/>
+          <line x1="46" y1="105" x2="975" y2="105"/>
+          <line x1="46" y1="59.5" x2="975" y2="59.5"/>
+          <line x1="46" y1="14" x2="975" y2="14"/>
+        </g>
+        <g fill="#78827f" font-size="11" text-anchor="end">
+          <text x="36" y="200">0</text>
+          <text x="36" y="154">30</text>
+          <text x="36" y="108">60</text>
+          <text x="36" y="63">90</text>
+          <text x="36" y="18">120</text>
+        </g>
+
+        <path d="M46,133.8 L178.7,112.6 L311.4,92.9 L444.1,74.7 L576.9,68.6 L709.6,62.5 L842.3,47.4 L975,33.7 L975,196 L46,196 Z" fill="url(#area)"/>
+        <path d="M46,133.8 L178.7,112.6 L311.4,92.9 L444.1,74.7 L576.9,68.6 L709.6,62.5 L842.3,47.4 L975,33.7"
+              fill="none" stroke="#4b93d8" stroke-width="2" stroke-linejoin="round"/>
+
+        <g fill="#78827f" font-size="11">
+          <text x="46" y="216" text-anchor="start">08:00</text>
+          <text x="311.4" y="216" text-anchor="middle">09:00</text>
+          <text x="576.9" y="216" text-anchor="middle">10:00</text>
+          <text x="842.3" y="216" text-anchor="middle">11:00</text>
+          <text x="975" y="216" text-anchor="end">11:30</text>
+        </g>
+
+        <!-- hover targets -->
+        <g class="pt">
+          <circle class="hit" cx="46" cy="133.8" r="16"/>
+          <circle class="dot" cx="46" cy="133.8" r="4.5" fill="#4b93d8" stroke="#14181a" stroke-width="2"/>
+          <g class="tip">
+            <rect x="0" y="71.8" width="96" height="44" fill="#0b0e0f" stroke="#374143"/>
+            <text x="10" y="89" fill="#aab2af" font-size="11">08:00</text>
+            <text x="10" y="106" fill="#ece7da" font-size="15" font-weight="700">41 次</text>
+          </g>
+        </g>
+        <g class="pt">
+          <circle class="hit" cx="178.7" cy="112.6" r="16"/>
+          <circle class="dot" cx="178.7" cy="112.6" r="4.5" fill="#4b93d8" stroke="#14181a" stroke-width="2"/>
+          <g class="tip">
+            <rect x="130.7" y="50.6" width="96" height="44" fill="#0b0e0f" stroke="#374143"/>
+            <text x="140.7" y="67.8" fill="#aab2af" font-size="11">08:30</text>
+            <text x="140.7" y="84.8" fill="#ece7da" font-size="15" font-weight="700">55 次</text>
+          </g>
+        </g>
+        <g class="pt">
+          <circle class="hit" cx="311.4" cy="92.9" r="16"/>
+          <circle class="dot" cx="311.4" cy="92.9" r="4.5" fill="#4b93d8" stroke="#14181a" stroke-width="2"/>
+          <g class="tip">
+            <rect x="263.4" y="30.9" width="96" height="44" fill="#0b0e0f" stroke="#374143"/>
+            <text x="273.4" y="48.1" fill="#aab2af" font-size="11">09:00</text>
+            <text x="273.4" y="65.1" fill="#ece7da" font-size="15" font-weight="700">68 次</text>
+          </g>
+        </g>
+        <g class="pt">
+          <circle class="hit" cx="444.1" cy="74.7" r="16"/>
+          <circle class="dot" cx="444.1" cy="74.7" r="4.5" fill="#4b93d8" stroke="#14181a" stroke-width="2"/>
+          <g class="tip">
+            <rect x="396.1" y="12.7" width="96" height="44" fill="#0b0e0f" stroke="#374143"/>
+            <text x="406.1" y="29.9" fill="#aab2af" font-size="11">09:30</text>
+            <text x="406.1" y="46.9" fill="#ece7da" font-size="15" font-weight="700">80 次</text>
+          </g>
+        </g>
+        <g class="pt">
+          <circle class="hit" cx="576.9" cy="68.6" r="16"/>
+          <circle class="dot" cx="576.9" cy="68.6" r="4.5" fill="#4b93d8" stroke="#14181a" stroke-width="2"/>
+          <g class="tip">
+            <rect x="528.9" y="12" width="96" height="44" fill="#0b0e0f" stroke="#374143"/>
+            <text x="538.9" y="29.2" fill="#aab2af" font-size="11">10:00</text>
+            <text x="538.9" y="46.2" fill="#ece7da" font-size="15" font-weight="700">84 次</text>
+          </g>
+        </g>
+        <g class="pt">
+          <circle class="hit" cx="709.6" cy="62.5" r="16"/>
+          <circle class="dot" cx="709.6" cy="62.5" r="4.5" fill="#4b93d8" stroke="#14181a" stroke-width="2"/>
+          <g class="tip">
+            <rect x="661.6" y="12" width="96" height="44" fill="#0b0e0f" stroke="#374143"/>
+            <text x="671.6" y="29.2" fill="#aab2af" font-size="11">10:30</text>
+            <text x="671.6" y="46.2" fill="#ece7da" font-size="15" font-weight="700">88 次</text>
+          </g>
+        </g>
+        <g class="pt">
+          <circle class="hit" cx="842.3" cy="47.4" r="16"/>
+          <circle class="dot" cx="842.3" cy="47.4" r="4.5" fill="#4b93d8" stroke="#14181a" stroke-width="2"/>
+          <g class="tip">
+            <rect x="794.3" y="12" width="96" height="44" fill="#0b0e0f" stroke="#374143"/>
+            <text x="804.3" y="29.2" fill="#aab2af" font-size="11">11:00</text>
+            <text x="804.3" y="46.2" fill="#ece7da" font-size="15" font-weight="700">98 次</text>
+          </g>
+        </g>
+        <g class="pt">
+          <circle class="hit" cx="975" cy="33.7" r="16"/>
+          <circle class="dot" cx="975" cy="33.7" r="4.5" fill="#4b93d8" stroke="#14181a" stroke-width="2"/>
+          <g class="tip">
+            <rect x="899" y="49.7" width="96" height="44" fill="#0b0e0f" stroke="#374143"/>
+            <text x="909" y="66.9" fill="#aab2af" font-size="11">11:30</text>
+            <text x="909" y="83.9" fill="#ece7da" font-size="15" font-weight="700">107 次</text>
+          </g>
+        </g>
+      </svg>
+    </section>
+
+    <!-- camera meters -->
+    <section class="panel meters" style="grid-column: span 4">
+      <div class="ph">
+        <h3>机位可用率</h3>
+        <span class="sub">竖线为目标 95%</span>
+      </div>
+
+      <div class="rows">
+      <div class="m-row">
+        <span class="lb">CAM-01 上料</span>
+        <div class="track"><div class="fill" style="width:99.4%"></div><span class="limit" style="left:95%"></span></div>
+        <span class="val">99.4%</span>
+        <svg class="warn blank" viewBox="0 0 16 16" aria-hidden="true"></svg>
+      </div>
+      <div class="m-row">
+        <span class="lb">CAM-02 装配 A</span>
+        <div class="track"><div class="fill" style="width:98.1%"></div><span class="limit" style="left:95%"></span></div>
+        <span class="val">98.1%</span>
+        <svg class="warn blank" viewBox="0 0 16 16" aria-hidden="true"></svg>
+      </div>
+      <div class="m-row low">
+        <span class="lb">CAM-03 锁付</span>
+        <div class="track"><div class="fill" style="width:87.2%"></div><span class="limit" style="left:95%"></span></div>
+        <span class="val">87.2%</span>
+        <svg class="warn" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 15 14H1z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 6v3.4M8 11.4v.9" stroke="currentColor" stroke-width="1.6"/></svg>
+      </div>
+      <div class="m-row">
+        <span class="lb">CAM-04 检测</span>
+        <div class="track"><div class="fill" style="width:99.8%"></div><span class="limit" style="left:95%"></span></div>
+        <span class="val">99.8%</span>
+        <svg class="warn blank" viewBox="0 0 16 16" aria-hidden="true"></svg>
+      </div>
+      <div class="m-row low">
+        <span class="lb">CAM-05 贴标</span>
+        <div class="track"><div class="fill" style="width:94.6%"></div><span class="limit" style="left:95%"></span></div>
+        <span class="val">94.6%</span>
+        <svg class="warn" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 15 14H1z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 6v3.4M8 11.4v.9" stroke="currentColor" stroke-width="1.6"/></svg>
+      </div>
+      <div class="m-row">
+        <span class="lb">CAM-06 复核</span>
+        <div class="track"><div class="fill" style="width:96.5%"></div><span class="limit" style="left:95%"></span></div>
+        <span class="val">96.5%</span>
+        <svg class="warn blank" viewBox="0 0 16 16" aria-hidden="true"></svg>
+      </div>
+      </div>
+
+      <div class="foot"><b>2 个机位</b>低于目标 · 05 现在无信号，正在计入中断时长</div>
+    </section>
+
+    <!-- anomaly types -->
+    <section class="panel bars" style="grid-column: span 5">
+      <div class="ph">
+        <h3>异常类型</h3>
+        <span class="sub">按 SOP 的失败原因归类</span>
+        <span class="r">共 17 件</span>
+      </div>
+
+      <div class="rows">
+      <div class="bar-row">
+        <span class="lb">步骤顺序错误</span>
+        <div class="track"><div class="fill" style="width:100%"></div></div>
+        <span class="val">6</span>
+      </div>
+      <div class="bar-row">
+        <span class="lb">缺少零件</span>
+        <div class="track"><div class="fill" style="width:66.7%"></div></div>
+        <span class="val">4</span>
+      </div>
+      <div class="bar-row">
+        <span class="lb">位置偏差</span>
+        <div class="track"><div class="fill" style="width:50%"></div></div>
+        <span class="val">3</span>
+      </div>
+      <div class="bar-row">
+        <span class="lb">工具未归位</span>
+        <div class="track"><div class="fill" style="width:33.3%"></div></div>
+        <span class="val">2</span>
+      </div>
+      <div class="bar-row">
+        <span class="lb">人员不符</span>
+        <div class="track"><div class="fill" style="width:33.3%"></div></div>
+        <span class="val">2</span>
+      </div>
+      </div>
+
+      <div class="foot">原因码由 SOP 定义，前端只按后端给的码归类，不做归因</div>
+    </section>
+
+    <!-- table -->
+    <section class="panel table" style="grid-column: span 7">
+      <div class="ph">
+        <h3>最近判定</h3>
+        <span class="sub">每条都能点开看画面和证据</span>
+        <span class="r">表格视图</span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:82px">时间</th>
+            <th style="width:150px">机位</th>
+            <th style="width:168px">步骤</th>
+            <th style="width:96px">结果</th>
+            <th>证据</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="t">12:39:04</td>
+            <td>CAM-03 锁付工位</td>
+            <td>第 3 步 · 拧紧螺栓</td>
+            <td><span class="state bad"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>异常</span></td>
+            <td class="ev">片段 0:18 · 4 张关键帧</td>
+          </tr>
+          <tr>
+            <td class="t">12:38:41</td>
+            <td>CAM-02 装配工位 A</td>
+            <td>第 4 步 · 安装垫片</td>
+            <td><span class="state review"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 15 14H1z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 6v3.4M8 11.4v.9" stroke="currentColor" stroke-width="1.8"/></svg>待确认</span></td>
+            <td class="ev">片段 0:12 · <span class="miss">缺 1 张关键帧</span></td>
+          </tr>
+          <tr>
+            <td class="t">12:36:20</td>
+            <td>CAM-02 装配工位 A</td>
+            <td>第 4 步 · 安装垫片</td>
+            <td><span class="state review"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 15 14H1z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 6v3.4M8 11.4v.9" stroke="currentColor" stroke-width="1.8"/></svg>待确认</span></td>
+            <td class="ev">片段 0:09 · 2 张关键帧</td>
+          </tr>
+          <tr>
+            <td class="t">12:33:12</td>
+            <td>CAM-04 视觉检测</td>
+            <td>第 1 步 · 外观检查</td>
+            <td><span class="state ok"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.6 6.4 12 13 4.6" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>正常</span></td>
+            <td class="ev">片段 0:16 · 3 张关键帧</td>
+          </tr>
+          <tr>
+            <td class="t">12:31:58</td>
+            <td>CAM-01 上料工位</td>
+            <td>第 2 步 · 扫码上料</td>
+            <td><span class="state ok"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.6 6.4 12 13 4.6" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>正常</span></td>
+            <td class="ev">片段 0:11 · 2 张关键帧</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="foot">
+        <span>只列出有记录的作业 · 离线时段不会被算成异常</span>
+        <a href="#">查看全部记录 ›</a>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="statusbar">
+    <div class="l">
+      <span style="width:7px;height:7px;background:var(--good);display:block"></span>
+      已连接 · 12:42:08 更新 · 图表只呈现已记录的事实，判定与结论以后端记录为准
+    </div>
+    <div class="r">
+      <span>这是演示数据，不是真实产线</span>
+      <span class="demo">演示模式</span>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

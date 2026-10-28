@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600, initial-scale=1">
+<title>方向 C · 先处理这一件 — 设计稿 v2</title>
+<style>
+  @font-face {
+    font-family: "Archivo";
+    src: url("fonts/archivo-var.woff2") format("woff2-variations");
+    font-weight: 100 900;
+    font-stretch: 62% 125%;
+    font-display: block;
+  }
+
+  :root {
+    --casing: #0d1011;
+    --floor: #d9d7cf;
+    --paper: #fcfcfa;
+    --ink: #16191a;
+    --ink-2: #474e4c;
+    --muted: #7a817e;
+    --rule: #c9c7bd;
+    --green: #2f7d4e;
+    --yellow: #f2c218;
+    --red: #bf2a1f;
+    --sans: "Archivo", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #000; }
+  body { font-family: var(--sans); -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
+
+  .screen {
+    width: 1600px; height: 1000px;
+    background: var(--floor);
+    display: grid;
+    grid-template-rows: 58px 1fr 108px 30px;
+    overflow: hidden;
+  }
+
+  .top {
+    display: flex; align-items: center; gap: 20px;
+    padding: 0 30px; background: var(--paper);
+    border-bottom: 1px solid var(--rule);
+  }
+  .mark { width: 16px; height: 16px; background: var(--ink); }
+  .brand { font-size: 15px; font-weight: 800; letter-spacing: .16em; }
+  .line { font-size: 16px; font-weight: 700; padding-left: 20px; border-left: 1px solid var(--rule); }
+  .line span { font-weight: 500; color: var(--muted); font-size: 13px; margin-left: 10px; }
+  .top .right { margin-left: auto; display: flex; align-items: baseline; gap: 22px; }
+  .clk { font-size: 24px; font-weight: 700; font-stretch: 62%; }
+  .who { font-size: 13px; color: var(--muted); }
+
+  .body { display: grid; grid-template-columns: 1fr 620px; min-height: 0; }
+
+  /* ---- the frame ---- */
+  .view { position: relative; background: #0d1011; overflow: hidden; }
+  .view img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; display: block;
+    filter: saturate(.85) contrast(1.05) brightness(.9);
+  }
+  .view::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(to bottom, #00000055 0%, #0000 22%, #0000 68%, #000000b3 100%);
+    pointer-events: none;
+  }
+  .roi { position: absolute; border: 4px solid var(--yellow); z-index: 2; }
+  .roi::before {
+    content: ""; position: absolute; inset: -4px;
+    box-shadow: 0 0 0 9999px #00000026;
+  }
+  .v-tag {
+    position: absolute; left: 24px; top: 22px; z-index: 3;
+    background: var(--yellow); color: #161300;
+    font-size: 13px; font-weight: 800; letter-spacing: .1em; padding: 5px 11px;
+  }
+  .v-meta {
+    position: absolute; left: 24px; bottom: 20px; right: 24px; z-index: 3;
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 13px; color: #c7cecb;
+  }
+  .v-meta b { color: #fff; font-weight: 600; }
+  .v-meta .hint { color: #9aa3a0; font-size: 12px; }
+
+  /* ---- decision panel ---- */
+  .panel {
+    background: var(--paper);
+    border-left: 1px solid var(--rule);
+    padding: 32px 40px 24px;
+    display: flex; flex-direction: column;
+    min-height: 0;
+  }
+  .eyebrow { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 700; letter-spacing: .12em; color: var(--red); }
+  .eyebrow i { width: 10px; height: 10px; background: var(--red); display: block; }
+  .q { margin: 16px 0 0; font-size: 46px; line-height: 1.14; font-weight: 800; letter-spacing: -.005em; }
+  .explain { margin: 14px 0 0; font-size: 16px; line-height: 1.6; color: var(--ink-2); max-width: 30em; }
+  .who-station {
+    margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--rule);
+    display: flex; gap: 28px; font-size: 13px; color: var(--muted);
+  }
+  .who-station b { color: var(--ink); font-weight: 700; }
+
+  .standard {
+    margin-top: 18px; background: #f3f2ec; padding: 13px 18px;
+    box-shadow: inset 3px 0 0 var(--ink);
+  }
+  .standard .k { font-size: 12px; font-weight: 700; letter-spacing: .12em; color: var(--muted); }
+  .standard p { margin: 6px 0 0; font-size: 15px; line-height: 1.5; color: var(--ink-2); }
+  .standard p b { color: var(--ink); }
+
+  .choices { margin-top: 22px; display: flex; flex-direction: column; gap: 12px; }
+  .choice-label { font-size: 12px; font-weight: 700; letter-spacing: .12em; color: var(--muted); margin-bottom: -2px; }
+  .choice {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 80px; padding: 0 22px; text-decoration: none;
+    background: var(--ink); color: #fff;
+  }
+  .choice .txt { display: flex; flex-direction: column; gap: 3px; }
+  .choice .txt b { font-size: 21px; font-weight: 700; }
+  .choice .txt span { font-size: 13px; color: #b9bfbc; font-weight: 400; }
+  .choice .k { font-size: 24px; color: #8d9692; }
+  .choice.no { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 2px #cfcdc4; }
+  .choice.no .txt span { color: var(--muted); }
+  .aside { margin-top: 12px; display: flex; gap: 22px; font-size: 13px; }
+  .aside a { color: var(--ink-2); text-decoration: none; border-bottom: 1px solid #bdbcb3; padding-bottom: 1px; }
+  .aside a.quiet { color: var(--muted); }
+
+  .panel-foot {
+    margin-top: auto; padding-top: 14px; border-top: 1px solid var(--rule);
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 13px; color: var(--muted);
+  }
+  .panel-foot a { color: var(--ink); text-decoration: none; font-weight: 600; border-bottom: 1px solid #bdbcb3; padding-bottom: 1px; }
+
+  /* ---- line strip ---- */
+  .linestrip {
+    background: var(--paper);
+    border-top: 1px solid var(--rule);
+    display: flex; align-items: center;
+    padding: 0 30px;
+  }
+  .ls-label { width: 108px; flex: none; font-size: 12px; font-weight: 700; letter-spacing: .14em; color: var(--muted); }
+  .track { position: relative; flex: 1; display: flex; align-items: center; height: 100%; }
+  .track::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px;
+    background: repeating-linear-gradient(90deg, #c2c0b7 0 10px, transparent 10px 18px);
+  }
+  .stop { position: relative; width: 25%; display: flex; flex-direction: column; gap: 3px; padding-left: 2px; }
+  .stop .dot { width: 16px; height: 16px; background: var(--green); box-shadow: 0 0 0 5px var(--paper); }
+  .stop .n { font-size: 13px; font-weight: 700; }
+  .stop .s { font-size: 12px; color: var(--muted); }
+  .stop.cur .dot { background: var(--red); width: 22px; height: 22px; box-shadow: 0 0 0 5px var(--paper), 0 0 0 9px #bf2a1f22; }
+  .stop.cur .s { color: var(--red); font-weight: 700; }
+  .stop.down .dot { background: #9aa09d; }
+  .ls-go {
+    flex: none; margin-left: 26px; font-size: 13px; color: var(--ink-2);
+    text-decoration: none; border-bottom: 1px solid #bdbcb3; padding-bottom: 1px;
+    background: var(--paper);
+  }
+
+  .status {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #23271f; color: #9aa49b; font-size: 11px; padding: 0 30px;
+  }
+  .status .l { display: flex; align-items: center; gap: 8px; }
+  .status .dot { width: 7px; height: 7px; background: #8fd49c; }
+  .status .r { display: flex; gap: 16px; align-items: center; }
+  .status .demo { padding: 1px 7px; box-shadow: inset 0 0 0 1px #4a544c; color: #c3ccc3; letter-spacing: .1em; }
+  .status .credit { color: #6f7a73; }
+</style>
+</head>
+<body>
+<div class="screen">
+
+  <header class="top">
+    <span class="mark"></span>
+    <span class="brand">VISISOP</span>
+    <span class="line">总装 A 线<span>白班 08:00–16:00</span></span>
+    <div class="right">
+      <span class="who">当班班长</span>
+      <span class="clk">12:42</span>
+    </div>
+  </header>
+
+  <main class="body">
+
+    <section class="view" aria-label="2 号工位相机画面">
+      <img src="photos/001-car-factory-assembly-line-opel-factory.jpg" alt="装配中的车身，车门敞开，座椅旁挂着扭矩扳手">
+      <span class="roi" style="left:17%; top:34%; width:25%; height:40%"></span>
+      <span class="v-tag">这里没看清</span>
+      <div class="v-meta">
+        <span><b>2 号工位 · 座椅锁付</b> &nbsp; 1920×1080</span>
+        <span><b>12:36:20</b> &nbsp;·&nbsp; <span class="hint">演示画面，不是真实照片</span></span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="eyebrow"><i></i>需要你确认</div>
+
+      <h1 class="q">右前螺栓装好了吗？</h1>
+
+      <p class="explain">系统没看清这颗螺栓。你看一眼画面，告诉我结果就行。</p>
+
+      <div class="who-station">
+        <span>工位 <b>02 座椅锁付</b></span>
+        <span>等待 <b>6 分钟</b></span>
+        <span>这是第 <b>3</b> 个待处理</span>
+      </div>
+
+      <div class="standard">
+        <span class="k">这一步的标准</span>
+        <p>右前螺栓锁付到位，<b>露出 2–3 扣</b>，垫片贴平。</p>
+      </div>
+
+      <div class="choices">
+        <span class="choice-label">选择结果</span>
+        <a class="choice" href="#">
+          <span class="txt"><b>装好了</b><span>按装好的记录，继续下一件</span></span>
+          <span class="k">›</span>
+        </a>
+        <a class="choice no" href="#">
+          <span class="txt"><b>没装好</b><span>记录下来，通知返工</span></span>
+          <span class="k">›</span>
+        </a>
+        <div class="aside">
+          <a href="#">看大图</a>
+          <a href="#">调更早的画面</a>
+          <a class="quiet" href="#">稍后处理</a>
+        </div>
+      </div>
+
+      <div class="panel-foot">
+        <span>处理后还有 <b>1</b> 件待确认</span>
+        <a href="#">看队列 ›</a>
+      </div>
+    </section>
+
+  </main>
+
+  <section class="linestrip" aria-label="整条产线状态">
+    <span class="ls-label">整条产线</span>
+    <div class="track">
+      <div class="stop">
+        <span class="dot"></span>
+        <span class="n">01 前围装配</span>
+        <span class="s">正常 · 已进行 6 分钟</span>
+      </div>
+      <div class="stop cur">
+        <span class="dot"></span>
+        <span class="n">02 座椅锁付</span>
+        <span class="s">待你确认 · 6 分钟</span>
+      </div>
+      <div class="stop">
+        <span class="dot"></span>
+        <span class="n">03 螺栓拧紧</span>
+        <span class="s">正常 · 已进行 3 分钟</span>
+      </div>
+      <div class="stop down">
+        <span class="dot"></span>
+        <span class="n">04 终检下线</span>
+        <span class="s">离线 · 12 分钟</span>
+      </div>
+    </div>
+    <a class="ls-go" href="#">看整条线 ›</a>
+  </section>
+
+  <footer class="status">
+    <div class="l"><span class="dot"></span>已连接 · 12:42:08 更新</div>
+    <div class="r">
+      <span class="credit">画面：Marek Ślusarczyk / Wikimedia Commons, CC BY 3.0</span>
+      <span>这是演示数据，不是真实产线</span>
+      <span class="demo">演示模式</span>
+      <span>帮助</span>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

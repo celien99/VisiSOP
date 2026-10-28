@@ -1,0 +1,94 @@
+@font-face {
+  font-family: "Archivo";
+  src: url("fonts/archivo-var.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: block;
+}
+
+:root {
+  --casing: #0b0e0f;
+  --surface: #14181a;
+  --surface-2: #1a2022;
+  --line: #283032;
+  --line-2: #374143;
+  --ink: #ece7da;
+  --ink-2: #aab2af;
+  --muted: #78827f;
+  --accent: #e9a227;
+  --good: #35a15b;
+  --warn: #e9a227;
+  --crit: #d9482f;
+  --off: #6d7779;
+  --series: #4b93d8;
+  --sans: "Archivo", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+  --cond: "Archivo", "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: #000; }
+body {
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.cond { font-stretch: 62%; }
+
+/* ---------- shell ---------- */
+.screen {
+  width: 1600px; height: 1000px;
+  background: var(--casing);
+  display: grid;
+  overflow: hidden;
+}
+
+.top {
+  display: flex; align-items: center; gap: 22px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--line);
+}
+.mark { width: 16px; height: 16px; background: var(--ink); }
+.brand { font-size: 16px; font-weight: 800; font-stretch: 78%; letter-spacing: .16em; }
+.top .sep { width: 1px; height: 22px; background: var(--line-2); }
+.nav { display: flex; align-self: stretch; gap: 26px; }
+.nav a {
+  display: flex; align-items: center; text-decoration: none;
+  font-size: 14px; font-weight: 500; color: var(--muted);
+  border-bottom: 2px solid transparent;
+}
+.nav a.on { color: var(--ink); border-bottom-color: var(--ink); }
+.top .right { margin-left: auto; display: flex; align-items: center; gap: 20px; }
+.clock { font-stretch: 62%; font-size: 26px; font-weight: 700; letter-spacing: .01em; }
+.who { font-size: 13px; color: var(--ink-2); }
+.conn { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-2); }
+.conn i { width: 7px; height: 7px; background: var(--good); display: block; }
+
+/* ---------- status vocabulary ---------- */
+.state {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 700; letter-spacing: .06em;
+  padding: 4px 8px; color: #0c100d;
+}
+.state svg { width: 12px; height: 12px; }
+.state.ok { background: var(--good); }
+.state.review { background: var(--warn); }
+.state.bad { background: var(--crit); color: #fff; }
+.state.down { background: var(--off); color: #0c100d; }
+
+/* ---------- status bar ---------- */
+.statusbar {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--casing); border-top: 1px solid var(--line);
+  color: #77817f; font-size: 11px; padding: 0 20px;
+}
+.statusbar .l { display: flex; align-items: center; gap: 9px; }
+.statusbar .r { display: flex; gap: 16px; align-items: center; }
+.statusbar .credit { color: #5e6967; }
+.statusbar .demo { padding: 2px 8px; box-shadow: inset 0 0 0 1px #414b49; color: #b8c0be; letter-spacing: .1em; }
+
+/* ---------- shared bits ---------- */
+.section-label {
+  font-size: 12px; font-weight: 700; letter-spacing: .14em; color: var(--muted);
+}
+.num { font-stretch: 62%; font-weight: 700; letter-spacing: -.01em; }

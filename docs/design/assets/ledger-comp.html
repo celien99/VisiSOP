@@ -1,0 +1,1096 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VisiSOP — 运行账本 / 效果图</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --paper: #EDF0F2;
+    --paper-2: #F5F7F8;
+    --ink: #1B2226;
+    --ink-2: #46535B;
+    --muted: #6E7A82;
+    --grid: #D5DCE1;
+    --grid-2: #C3CDD4;
+    --rule: #B9C4CB;
+    --cobalt: #2F4F7A;
+    --ochre: #A8791F;
+    --moss: #4F7355;
+    --vermilion: #A94036;
+    --slate: #5E6B73;
+    --mono: "IBM Plex Mono", "SFMono-Regular", Menlo, monospace;
+    --sans: "Atkinson Hyperlegible", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", sans-serif;
+  }
+  html, body { margin: 0; padding: 0; background: #1a1f23; }
+  body {
+    font-family: var(--sans);
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.45;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen {
+    width: 1600px; height: 1000px;
+    margin: 0 auto 40px;
+    position: relative; overflow: hidden;
+    background: var(--paper);
+  }
+  .screen::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .03; z-index: 50;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E");
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    height: 60px; display: flex; align-items: center; gap: 26px;
+    padding: 0 32px; border-bottom: 1px solid var(--rule);
+    background: var(--paper-2); position: relative; z-index: 2;
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; white-space: nowrap; }
+  .brand .mark { font-size: 18px; font-weight: 700; letter-spacing: -.03em; }
+  .brand .mark b { color: var(--cobalt); }
+  .brand .sub { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: .06em; }
+  .topmeta { font-family: var(--mono); font-size: 9.5px; color: var(--muted); white-space: nowrap; }
+  .nav { display: flex; align-items: center; gap: 20px; }
+  .nav a { color: var(--ink-2); text-decoration: none; font-size: 12px; padding: 4px 0; border-bottom: 1px solid transparent; }
+  .nav a.active { color: var(--ink); border-bottom-color: var(--cobalt); }
+  .nav a .count { margin-left: 5px; font-family: var(--mono); font-size: 9px; color: var(--vermilion); }
+  .topright { margin-left: auto; display: flex; align-items: center; gap: 18px; }
+  .clock { font-family: var(--mono); font-size: 11px; color: var(--ink); }
+  .user { font-size: 11px; color: var(--ink-2); white-space: nowrap; }
+  .seg { display: inline-flex; border: 1px solid var(--rule); background: var(--paper); }
+  .seg span { display: inline-flex; align-items: center; height: 26px; padding: 0 12px; font-size: 10.5px; color: var(--muted); }
+  .seg span.on { background: var(--cobalt); color: #fff; }
+  .live { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 9.5px; color: var(--moss); }
+  .live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--moss); box-shadow: 0 0 0 3px rgba(79,115,85,.12); }
+
+  /* ---------- shared bits ---------- */
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono); font-size: 8.5px; line-height: 1; letter-spacing: .02em;
+    padding: 4px 6px; border: 1px solid currentColor; border-radius: 1px; white-space: nowrap;
+  }
+  .chip.review { color: var(--ochre); background: rgba(168,121,31,.06); }
+  .chip.ok { color: var(--moss); background: rgba(79,115,85,.06); }
+  .chip.alarm { color: var(--vermilion); background: rgba(169,64,54,.06); }
+  .chip.system { color: var(--slate); background: rgba(94,107,115,.06); }
+  .chip.muted { color: var(--muted); background: transparent; }
+  .hatch-review {
+    background-color: rgba(168,121,31,.07);
+    background-image: repeating-linear-gradient(-45deg, rgba(168,121,31,.22) 0 1px, transparent 1px 6px);
+    border: 1px solid rgba(168,121,31,.5);
+  }
+  .hatch-system {
+    background-color: rgba(94,107,115,.06);
+    background-image: repeating-linear-gradient(-45deg, rgba(94,107,115,.22) 0 1px, transparent 1px 6px);
+    border: 1px solid rgba(94,107,115,.45);
+  }
+
+  /* ---------- screen 1: shift ledger ---------- */
+  .ledger { display: grid; grid-template-columns: 1fr 384px; height: 896px; }
+  .timeline-wrap { display: flex; flex-direction: column; min-width: 0; border-right: 1px solid var(--rule); }
+  .ruler-row { height: 40px; display: grid; grid-template-columns: 208px 1fr; border-bottom: 1px solid var(--rule); flex: none; }
+  .ruler-label {
+    padding: 0 12px 0 32px; display: flex; align-items: center;
+    border-right: 1px solid var(--grid); font-size: 9.5px; color: var(--muted);
+  }
+  .ruler { position: relative; }
+  .tick { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--grid-2); }
+  .tick.minor { border-left-color: var(--grid); }
+  .tick span { position: absolute; top: 11px; left: 5px; font-family: var(--mono); font-size: 9.5px; color: var(--muted); white-space: nowrap; }
+  .tick.now { border-left: 2px solid var(--cobalt); }
+  .tick.now span { left: auto; right: 2px; color: var(--cobalt); }
+
+  .lanes { height: 636px; position: relative; overflow: hidden; }
+  .grid-lines { position: absolute; top: 0; bottom: 0; left: 208px; right: 0; pointer-events: none; z-index: 0; }
+  .grid-lines i { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--grid); }
+  .grid-lines i.major { border-left-color: var(--grid-2); }
+  .group-head {
+    height: 28px; display: flex; align-items: center; gap: 10px;
+    padding: 0 32px; background: rgba(47,79,122,.035);
+    border-top: 1px solid var(--rule); border-bottom: 1px solid var(--grid);
+    position: relative; z-index: 1;
+  }
+  .group-head .code { font-family: var(--mono); font-size: 9.5px; color: var(--cobalt); }
+  .group-head .name { font-size: 11.5px; font-weight: 700; letter-spacing: -.01em; }
+  .group-head .tag { margin-left: auto; font-family: var(--mono); font-size: 8.5px; color: var(--muted); letter-spacing: .04em; }
+  .lane { height: 50px; display: grid; grid-template-columns: 208px 1fr; border-bottom: 1px solid var(--grid); position: relative; z-index: 1; }
+  .lane:last-of-type { border-bottom: none; }
+  .lane-label { padding: 7px 12px 6px 32px; border-right: 1px solid var(--grid); }
+  .lane-name { font-size: 11.5px; font-weight: 700; letter-spacing: -.005em; }
+  .lane-sub { margin-top: 1px; font-family: var(--mono); font-size: 8.5px; color: var(--muted); }
+  .lane-body { position: relative; }
+  .band { position: absolute; top: 14px; height: 22px; border: 1px solid var(--moss); background: rgba(79,115,85,.14); overflow: hidden; }
+  .band .ticks { position: absolute; inset: 0; }
+  .band .ticks i { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(79,115,85,.55); }
+  .band .label { position: absolute; left: 5px; top: 2px; font-family: var(--mono); font-size: 7.5px; color: var(--moss); white-space: nowrap; }
+  .band.selected { border: 1.5px solid var(--cobalt); background: transparent; z-index: 3; }
+  .band .seg { position: absolute; top: 0; bottom: 0; }
+  .band .seg.ok { background: rgba(79,115,85,.20); }
+  .band .seg.review { background: rgba(168,121,31,.16); }
+  .band .seg.review::after { content: ""; position: absolute; inset: 0; background-image: repeating-linear-gradient(-45deg, rgba(168,121,31,.30) 0 1px, transparent 1px 6px); }
+  .band .seg.active { background: rgba(47,79,122,.14); }
+  .band .seg.alarm { background: rgba(169,64,54,.18); }
+  .dot { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: var(--moss); top: 22px; }
+  .dot.review { background: var(--ochre); }
+  .dot.alarm { background: var(--vermilion); }
+  .dot.system { background: var(--slate); }
+  .gap {
+    position: absolute; top: 13px; height: 24px; z-index: 2;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 7px; color: var(--slate); letter-spacing: .02em;
+  }
+  .sysline { position: absolute; top: 24px; height: 2px; left: 0; right: 0; background: rgba(79,115,85,.5); }
+  .sysline .bad { position: absolute; top: -1px; height: 4px; background: var(--slate); }
+  .sysline .note { position: absolute; top: -14px; transform: translateX(-50%); font-family: var(--mono); font-size: 7.5px; color: var(--slate); white-space: nowrap; }
+  .evsq { position: absolute; top: 20px; width: 8px; height: 8px; border: 1px solid var(--moss); background: rgba(79,115,85,.18); }
+  .evsq.pending { border-color: var(--ochre); background: transparent; border-style: dashed; }
+  .nowline { position: absolute; top: 0; bottom: 0; left: 100%; width: 2px; background: var(--cobalt); z-index: 4; }
+  .nowline::before { content: ""; position: absolute; top: 0; left: -3px; width: 8px; height: 8px; background: var(--cobalt); transform: rotate(45deg); }
+  .sel-line { position: absolute; top: 0; bottom: 0; width: 1.5px; background: rgba(47,79,122,.75); z-index: 4; }
+  .sel-line::before { content: ""; position: absolute; top: -3px; left: -3px; width: 7px; height: 7px; background: var(--cobalt); transform: rotate(45deg); }
+  .sel-line .cap { position: absolute; top: 2px; left: 6px; font-family: var(--mono); font-size: 7.5px; color: var(--cobalt); white-space: nowrap; }
+  .shift-summary {
+    height: 42px; border-top: 1px solid var(--rule); display: flex; align-items: center; gap: 16px;
+    padding: 0 32px; position: relative; z-index: 2; background: var(--paper-2);
+  }
+  .shift-summary .txt { font-size: 10.5px; color: var(--ink-2); }
+  .shift-summary .txt b { font-weight: 700; color: var(--ink); }
+  .dist { display: flex; gap: 2px; margin-left: 4px; }
+  .dist i { display: block; height: 6px; width: 22px; background: var(--moss); }
+  .dist i.review { background: var(--ochre); }
+  .dist i.active { background: var(--cobalt); }
+  .dist i.alarm { background: var(--vermilion); }
+  .dist i.idle { background: var(--grid-2); }
+
+  /* selected execution detail strip */
+  .detail { height: 220px; border-top: 1px solid var(--rule); background: var(--paper-2); padding: 12px 32px 10px; display: flex; flex-direction: column; flex: none; }
+  .detail-head { height: 24px; display: flex; align-items: baseline; gap: 10px; }
+  .detail-head .t { font-size: 12px; font-weight: 700; }
+  .detail-head .k { font-family: var(--mono); font-size: 9px; color: var(--muted); }
+  .detail-head .right { margin-left: auto; font-family: var(--mono); font-size: 9px; color: var(--cobalt); }
+  .detail-ruler { height: 24px; position: relative; margin-left: 208px; border-bottom: 1px solid var(--grid); }
+  .detail-ruler .tick { border-left-color: var(--grid); }
+  .detail-ruler .tick span { top: 6px; font-size: 8.5px; }
+  .detail-band-wrap { height: 100px; display: grid; grid-template-columns: 208px 1fr; }
+  .detail-band-label { padding-top: 10px; }
+  .detail-band-label .t { font-size: 10.5px; font-weight: 700; }
+  .detail-band-label .s { font-family: var(--mono); font-size: 8.5px; color: var(--muted); }
+  .detail-band { position: relative; border-left: 1px solid var(--grid); }
+  .step-seg { position: absolute; top: 18px; height: 42px; border: 1px solid var(--grid-2); background: var(--paper); overflow: hidden; }
+  .step-seg .n { position: absolute; left: 5px; top: 4px; font-family: var(--mono); font-size: 7.5px; color: var(--muted); }
+  .step-seg .nm { position: absolute; left: 5px; top: 15px; font-size: 9.5px; font-weight: 700; white-space: nowrap; }
+  .step-seg .st { position: absolute; left: 5px; top: 29px; font-family: var(--mono); font-size: 7px; color: var(--moss); white-space: nowrap; }
+  .step-seg.review { border-color: rgba(168,121,31,.6); background: rgba(168,121,31,.05); }
+  .step-seg.review .st { color: var(--ochre); }
+  .step-seg.wait { border-color: rgba(168,121,31,.45); background: rgba(168,121,31,.04); }
+  .step-seg.wait::after { content: ""; position: absolute; inset: 0; background-image: repeating-linear-gradient(-45deg, rgba(168,121,31,.16) 0 1px, transparent 1px 7px); }
+  .step-seg.wait .nm { color: var(--ochre); }
+  .step-seg.wait .st { color: var(--ochre); }
+  .detail-foot { height: 20px; display: flex; align-items: center; gap: 18px; font-family: var(--mono); font-size: 8.5px; color: var(--muted); }
+  .detail-foot b { color: var(--ink); font-weight: 500; }
+
+  /* case file */
+  .casefile { background: var(--paper-2); padding: 16px 20px 14px; display: flex; flex-direction: column; min-height: 0; }
+  .case-kicker { display: flex; align-items: center; justify-content: space-between; }
+  .case-kicker .label { font-size: 9.5px; color: var(--muted); }
+  .case-rule { width: 40px; height: 2px; background: var(--cobalt); margin: 10px 0 10px; }
+  .case-title { margin: 0; font-size: 19px; line-height: 1.15; letter-spacing: -.02em; font-weight: 700; }
+  .case-key { margin-top: 2px; font-family: var(--mono); font-size: 9px; color: var(--muted); }
+  .case-state { margin-top: 9px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .fact { border-top: 1px solid var(--grid); padding: 9px 0 7px; }
+  .fact-head { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
+  .fact-head .sw { width: 5px; height: 5px; background: var(--ink); }
+  .fact-head h3 { margin: 0; font-size: 10.5px; font-weight: 700; }
+  .rows { display: grid; gap: 2px; margin: 0; }
+  .rows > div { display: grid; grid-template-columns: 78px 1fr; gap: 7px; align-items: baseline; }
+  .rows dt { margin: 0; color: var(--muted); font-size: 9.5px; }
+  .rows dd { margin: 0; color: var(--ink); font-size: 9.5px; }
+  .rows dd.mono { font-family: var(--mono); font-size: 8.5px; color: var(--ink-2); }
+  .filmstrip { display: flex; gap: 5px; margin-top: 7px; }
+  .thumb { width: 101px; height: 58px; border: 1px solid var(--grid-2); background: #242c31; position: relative; overflow: hidden; flex: none; }
+  .thumb svg { width: 100%; height: 100%; display: block; }
+  .thumb.selected { border-color: var(--cobalt); box-shadow: 0 0 0 1px var(--cobalt); }
+  .thumb .tm { position: absolute; left: 4px; bottom: 2px; font-family: var(--mono); font-size: 6.5px; color: #d5dce1; }
+  .thumb .bd { position: absolute; right: 3px; top: 3px; font-family: var(--mono); font-size: 5.8px; color: #fff; background: rgba(27,34,38,.7); padding: 1px 3px; }
+  .decision { margin-top: auto; border-top: 1px solid var(--rule); padding-top: 9px; }
+  .decision h3 { margin: 0 0 7px; font-size: 10.5px; font-weight: 700; }
+  .field { height: 27px; border: 1px solid var(--grid-2); background: var(--paper); display: flex; align-items: center; justify-content: space-between; padding: 0 8px; font-family: var(--mono); font-size: 8.5px; color: var(--ink-2); margin-bottom: 5px; }
+  .field .ph { color: var(--muted); font-family: var(--sans); font-size: 9.5px; }
+  .btnrow { display: flex; gap: 6px; margin-top: 6px; }
+  .btn { height: 29px; padding: 0 10px; border: 1px solid var(--grid-2); background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 10px; border-radius: 1px; }
+  .btn.primary { background: var(--cobalt); border-color: var(--cobalt); color: #fff; }
+  .btn.danger { color: var(--vermilion); border-color: rgba(169,64,54,.45); }
+  .caption { margin-top: 6px; font-size: 8.5px; color: var(--muted); line-height: 1.4; }
+  .audit { margin-top: 8px; font-family: var(--mono); font-size: 7.5px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* status bar */
+  .statusbar {
+    height: 44px; border-top: 1px solid var(--rule); background: var(--paper-2);
+    display: flex; align-items: center; gap: 16px; padding: 0 32px;
+    font-family: var(--mono); font-size: 8.5px; color: var(--muted);
+  }
+  .statusbar .sep { width: 1px; height: 10px; background: var(--grid-2); }
+  .statusbar .right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+  .statusbar .ok { color: var(--moss); }
+  .statusbar .warn { color: var(--slate); }
+
+  /* ---------- screen 2: now mode ---------- */
+  .now-content { height: 896px; display: flex; flex-direction: column; }
+  .station-strip { height: 108px; display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--rule); flex: none; }
+  .station {
+    padding: 13px 18px; border-right: 1px solid var(--grid); position: relative;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .station:last-child { border-right: none; }
+  .station.selected { background: rgba(47,79,122,.045); box-shadow: inset 0 2px 0 var(--cobalt); }
+  .station .row1 { display: flex; align-items: center; gap: 8px; }
+  .station .code { font-family: var(--mono); font-size: 9.5px; color: var(--cobalt); }
+  .station .nm { font-size: 11px; font-weight: 700; }
+  .station .state { margin-left: auto; }
+  .station .cur { font-size: 10.5px; color: var(--ink-2); }
+  .station .sub { display: flex; gap: 12px; font-family: var(--mono); font-size: 8px; color: var(--muted); }
+  .station .sub .bad { color: var(--slate); }
+  .now-main { flex: 1; display: grid; grid-template-columns: 1fr 440px; min-height: 0; }
+  .now-left { display: flex; flex-direction: column; border-right: 1px solid var(--rule); min-width: 0; }
+  .exec-head { height: 64px; padding: 10px 28px; border-bottom: 1px solid var(--grid); display: flex; align-items: center; gap: 12px; flex: none; }
+  .exec-head .t { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+  .exec-head .k { font-family: var(--mono); font-size: 8.5px; color: var(--muted); }
+  .exec-head .right { margin-left: auto; text-align: right; }
+  .exec-head .right .big { font-family: var(--mono); font-size: 10px; color: var(--ochre); }
+  .exec-head .right .small { font-family: var(--mono); font-size: 8px; color: var(--muted); }
+  .step-list { flex: 1; padding: 14px 28px 0; position: relative; min-height: 0; }
+  .step-list::before { content: ""; position: absolute; left: 45px; top: 28px; bottom: 20px; width: 1px; background: var(--grid); }
+  .step-row { min-height: 60px; display: grid; grid-template-columns: 36px 1fr 110px 84px; gap: 12px; align-items: center; border-bottom: 1px solid var(--grid); position: relative; }
+  .step-row:last-of-type { border-bottom: none; }
+  .step-idx { width: 24px; height: 24px; border: 1px solid var(--grid-2); background: var(--paper); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 8.5px; color: var(--muted); position: relative; z-index: 1; }
+  .step-row.done .step-idx { border-color: var(--moss); color: var(--moss); background: rgba(79,115,85,.06); }
+  .step-row.active .step-idx { border-color: var(--ochre); color: var(--ochre); background: rgba(168,121,31,.07); }
+  .step-main .nm { font-size: 12px; font-weight: 700; }
+  .step-main .ky { font-family: var(--mono); font-size: 8px; color: var(--muted); }
+  .step-state { text-align: left; }
+  .step-time { text-align: right; font-family: var(--mono); font-size: 9px; color: var(--ink-2); }
+  .step-row.active { background: rgba(168,121,31,.035); margin: 0 -28px; padding: 0 28px; border-left: 2px solid var(--ochre); }
+  .step-expanded {
+    margin: 0 -28px 8px; padding: 10px 28px 12px 74px;
+    background: rgba(168,121,31,.035); border-left: 2px solid var(--ochre); border-bottom: 1px solid var(--grid);
+    display: flex; gap: 14px; align-items: center;
+  }
+  .step-expanded .txt { font-size: 9.5px; color: var(--ink-2); line-height: 1.5; }
+  .step-expanded .txt b { color: var(--ochre); font-weight: 700; }
+  .mini-ev { display: flex; gap: 4px; }
+  .mini-ev .th { width: 54px; height: 34px; border: 1px solid var(--grid-2); background: #242c31; overflow: hidden; }
+  .mini-ev .th svg { width: 100%; height: 100%; display: block; }
+  .step-expanded .act { margin-left: auto; }
+  .recent { height: 96px; border-top: 1px solid var(--rule); background: var(--paper-2); padding: 8px 28px; flex: none; }
+  .recent .h { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .recent .h .t { font-size: 9.5px; font-weight: 700; }
+  .recent .h .k { font-family: var(--mono); font-size: 7.5px; color: var(--muted); }
+  .event-row { display: grid; grid-template-columns: 54px 1fr 90px; gap: 8px; align-items: baseline; font-size: 8.5px; padding: 2px 0; border-bottom: 1px solid rgba(213,220,225,.6); }
+  .event-row:last-child { border-bottom: none; }
+  .event-row .tm { font-family: var(--mono); font-size: 8px; color: var(--muted); }
+  .event-row .ty { font-family: var(--mono); font-size: 8px; color: var(--ink-2); }
+  .event-row .st { text-align: right; font-family: var(--mono); font-size: 7.5px; }
+  .now-right { background: var(--paper-2); padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+  .panel-h { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .panel-h .t { font-size: 10.5px; font-weight: 700; }
+  .panel-h .k { font-family: var(--mono); font-size: 7.5px; color: var(--muted); }
+  .panel-h .right { margin-left: auto; font-family: var(--mono); font-size: 7.5px; }
+  .feed { height: 224px; border: 1px solid var(--grid-2); background: #242c31; position: relative; overflow: hidden; }
+  .feed svg { width: 100%; height: 100%; display: block; }
+  .feed .overlay { position: absolute; left: 8px; top: 8px; display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 7.5px; color: #d5dce1; background: rgba(27,34,38,.55); padding: 3px 5px; }
+  .feed .overlay .dot { position: static; width: 5px; height: 5px; background: var(--moss); }
+  .feed .stamp { position: absolute; right: 8px; bottom: 7px; font-family: var(--mono); font-size: 7.5px; color: #d5dce1; background: rgba(27,34,38,.55); padding: 2px 4px; }
+  .feed .note { position: absolute; left: 8px; bottom: 7px; font-family: var(--mono); font-size: 7px; color: #b9c4cb; background: rgba(27,34,38,.55); padding: 2px 4px; }
+  .evidence-mini { border: 1px solid var(--grid-2); background: var(--paper); display: grid; grid-template-columns: 128px 1fr; min-height: 132px; }
+  .evidence-mini .img { background: #242c31; border-right: 1px solid var(--grid-2); overflow: hidden; }
+  .evidence-mini .img svg { width: 100%; height: 100%; display: block; }
+  .evidence-mini .meta { padding: 8px 10px; }
+  .evidence-mini .meta .t { font-size: 10px; font-weight: 700; }
+  .evidence-mini .meta .k { font-family: var(--mono); font-size: 7.5px; color: var(--muted); margin-top: 2px; }
+  .evidence-mini .meta .chips { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+  .health { border-top: 1px solid var(--grid); padding-top: 8px; }
+  .health-row { display: grid; grid-template-columns: 1fr 88px 76px; gap: 8px; align-items: center; font-size: 9px; padding: 3px 0; border-bottom: 1px solid rgba(213,220,225,.55); }
+  .health-row .chip { font-size: 8px; padding: 3px 5px; justify-self: start; }
+  .health-row:last-child { border-bottom: none; }
+  .health-row .nm { color: var(--ink-2); }
+  .health-row .v { font-family: var(--mono); font-size: 7.5px; color: var(--muted); }
+  .mini-timeline { height: 100px; border-top: 1px solid var(--rule); background: var(--paper-2); padding: 8px 28px; flex: none; }
+  .mini-timeline .h { display: flex; align-items: baseline; gap: 8px; height: 18px; }
+  .mini-timeline .h .t { font-size: 9.5px; font-weight: 700; }
+  .mini-timeline .h .k { font-family: var(--mono); font-size: 7.5px; color: var(--muted); }
+  .mini-timeline .h .right { margin-left: auto; font-family: var(--mono); font-size: 7.5px; color: var(--cobalt); }
+  .mini-track { height: 46px; position: relative; margin-top: 2px; border-bottom: 1px solid var(--grid); }
+  .mini-track .seg { position: absolute; top: 12px; height: 22px; border: 1px solid var(--grid-2); background: var(--paper); }
+  .mini-track .seg.ok { border-color: var(--moss); background: rgba(79,115,85,.14); }
+  .mini-track .seg.review { border-color: rgba(168,121,31,.6); background: rgba(168,121,31,.08); }
+  .mini-track .seg.review::after { content: ""; position: absolute; inset: 0; background-image: repeating-linear-gradient(-45deg, rgba(168,121,31,.25) 0 1px, transparent 1px 6px); }
+  .mini-track .seg .l { position: absolute; left: 4px; top: 3px; font-family: var(--mono); font-size: 6.5px; color: var(--ink-2); white-space: nowrap; }
+  .mini-track .now { position: absolute; top: 4px; bottom: 0; right: 0; width: 2px; background: var(--cobalt); }
+  .mini-track .now::before { content: ""; position: absolute; top: -2px; left: -3px; width: 8px; height: 8px; background: var(--cobalt); transform: rotate(45deg); }
+  .mini-ticks { display: flex; justify-content: space-between; margin-top: 2px; font-family: var(--mono); font-size: 7px; color: var(--muted); }
+
+  /* ---------- screen 3: review dossier ---------- */
+  .dossier { height: 896px; display: grid; grid-template-columns: 220px 1fr 380px; gap: 24px; padding: 24px 32px; }
+  .rail { border-right: 1px solid var(--grid); padding-right: 24px; display: flex; flex-direction: column; min-height: 0; }
+  .rail .kicker { font-family: var(--mono); font-size: 8.5px; color: var(--muted); }
+  .rail .title { font-size: 16px; font-weight: 700; letter-spacing: -.01em; margin-top: 3px; }
+  .rail .sub { font-family: var(--mono); font-size: 8.5px; color: var(--muted); margin-top: 2px; }
+  .rail .rule { height: 2px; width: 36px; background: var(--cobalt); margin: 14px 0 16px; }
+  .vrail { position: relative; padding-left: 22px; }
+  .vrail::before { content: ""; position: absolute; left: 6px; top: 8px; bottom: 14px; width: 1px; background: var(--grid-2); }
+  .vstep { position: relative; padding: 0 0 18px; }
+  .vstep .dot { position: absolute; left: -19px; top: 4px; width: 7px; height: 7px; border-radius: 50%; background: var(--paper); border: 1px solid var(--grid-2); }
+  .vstep.done .dot { background: var(--moss); border-color: var(--moss); }
+  .vstep.review .dot { background: var(--ochre); border-color: var(--ochre); box-shadow: 0 0 0 3px rgba(168,121,31,.12); }
+  .vstep .t { font-size: 10.5px; font-weight: 700; }
+  .vstep.review .t { color: var(--ochre); }
+  .vstep .k { font-family: var(--mono); font-size: 7.5px; color: var(--muted); }
+  .vstep .tm { font-family: var(--mono); font-size: 7.5px; color: var(--ink-2); }
+  .rail-summary { margin-top: 6px; border-top: 1px solid var(--grid); padding-top: 10px; display: grid; gap: 4px; }
+  .rail-summary .row { display: flex; justify-content: space-between; gap: 8px; font-size: 8.5px; }
+  .rail-summary .row .v { font-family: var(--mono); font-size: 8px; color: var(--ink-2); }
+  .center { min-width: 0; display: flex; flex-direction: column; }
+  .center-head { display: flex; align-items: baseline; gap: 10px; height: 28px; }
+  .center-head .t { font-size: 13px; font-weight: 700; }
+  .center-head .k { font-family: var(--mono); font-size: 8.5px; color: var(--muted); }
+  .center-head .right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  .viewer { height: 430px; border: 1px solid var(--grid-2); background: #242c31; position: relative; overflow: hidden; margin-top: 6px; }
+  .viewer svg { width: 100%; height: 100%; display: block; }
+  .viewer .tl { position: absolute; left: 12px; top: 10px; display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 7.5px; color: #d5dce1; background: rgba(27,34,38,.6); padding: 4px 6px; }
+  .viewer .tl .dot { position: static; width: 5px; height: 5px; background: var(--moss); }
+  .viewer .tr { position: absolute; right: 12px; top: 10px; display: flex; gap: 4px; }
+  .viewer .bl { position: absolute; left: 12px; bottom: 10px; font-family: var(--mono); font-size: 8px; color: #d5dce1; background: rgba(27,34,38,.6); padding: 4px 6px; }
+  .viewer .br { position: absolute; right: 12px; bottom: 10px; font-family: var(--mono); font-size: 7.5px; color: #c3cdd4; background: rgba(27,34,38,.6); padding: 4px 6px; }
+  .roi-label { position: absolute; left: 43%; top: 35%; font-family: var(--mono); font-size: 7.5px; color: #d5dce1; background: rgba(27,34,38,.7); padding: 2px 4px; }
+  .filmstrip-lg { display: flex; gap: 6px; margin-top: 8px; }
+  .frame-lg { flex: 1; height: 74px; border: 1px solid var(--grid-2); background: #242c31; position: relative; overflow: hidden; }
+  .frame-lg svg { width: 100%; height: 100%; display: block; }
+  .frame-lg.selected { border-color: var(--cobalt); box-shadow: 0 0 0 1px var(--cobalt); }
+  .frame-lg .tm { position: absolute; left: 4px; bottom: 2px; font-family: var(--mono); font-size: 6.5px; color: #d5dce1; }
+  .frame-lg .bd { position: absolute; right: 3px; top: 3px; font-family: var(--mono); font-size: 6px; color: #fff; background: rgba(27,34,38,.7); padding: 1px 3px; }
+  .modelout { margin-top: 12px; border: 1px solid var(--grid-2); background: var(--paper-2); padding: 10px 12px; }
+  .modelout .h { display: flex; align-items: baseline; gap: 8px; margin-bottom: 5px; }
+  .modelout .h .t { font-size: 10px; font-weight: 700; }
+  .modelout .h .k { font-family: var(--mono); font-size: 7.5px; color: var(--muted); }
+  .modelout pre { margin: 0; font-family: var(--mono); font-size: 7.5px; line-height: 1.55; color: var(--ink-2); white-space: pre-wrap; }
+  .modelout pre b { color: var(--ink); font-weight: 500; }
+  .missing { margin-top: 10px; border: 1px solid rgba(94,107,115,.45); background: rgba(94,107,115,.04); padding: 8px 10px; }
+  .missing .h { display: flex; align-items: center; gap: 8px; }
+  .missing .h .t { font-size: 10px; font-weight: 700; }
+  .missing .h .k { font-family: var(--mono); font-size: 7.5px; color: var(--muted); }
+  .missing .h .chip { margin-left: auto; }
+  .missing .body {
+    margin-top: 5px; height: 34px; display: flex; align-items: center; justify-content: center;
+    border: 1px dashed rgba(94,107,115,.4);
+    background-image: repeating-linear-gradient(-45deg, rgba(94,107,115,.14) 0 1px, transparent 1px 7px);
+    font-size: 8.5px; color: var(--slate);
+  }
+  .dossier-right { display: flex; flex-direction: column; min-height: 0; }
+  .dossier-right .panel-title { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .dossier-right .panel-title .t { font-size: 11px; font-weight: 700; }
+  .dossier-right .panel-title .k { font-family: var(--mono); font-size: 7.5px; color: var(--muted); }
+  .fact.card { border: 1px solid var(--grid-2); background: var(--paper-2); padding: 9px 10px; margin-bottom: 8px; }
+  .fact.card .fact-head { margin-bottom: 5px; }
+  .fact.card .rows > div { grid-template-columns: 72px 1fr; }
+  .decision-lg { border: 1px solid var(--grid-2); background: var(--paper-2); padding: 12px; margin-top: 2px; }
+  .decision-lg .h { font-size: 11px; font-weight: 700; margin-bottom: 8px; }
+  .decision-lg .reason { display: flex; align-items: center; justify-content: space-between; height: 30px; border: 1px solid var(--grid-2); background: var(--paper); padding: 0 8px; font-family: var(--mono); font-size: 8.5px; color: var(--ochre); margin-bottom: 6px; }
+  .decision-lg .note { height: 48px; border: 1px solid var(--grid-2); background: var(--paper); padding: 6px 8px; font-size: 9.5px; color: var(--muted); margin-bottom: 7px; }
+  .decision-lg .btnrow .btn { flex: 1; }
+  .decision-lg .caption { margin-top: 7px; font-size: 8px; }
+  .audit-lg { margin-top: 9px; border-top: 1px solid var(--grid); padding-top: 7px; }
+  .audit-lg .row { display: grid; grid-template-columns: 54px 1fr; gap: 8px; font-size: 8px; color: var(--muted); padding: 2px 0; }
+  .audit-lg .row .tm { font-family: var(--mono); font-size: 7.5px; }
+  .audit-lg .row .tx b { color: var(--ink-2); font-weight: 500; }
+
+  .svg-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+</style>
+</head>
+<body>
+
+<svg class="svg-defs" aria-hidden="true">
+  <defs>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7c878d"/>
+      <stop offset=".35" stop-color="#cdd4d8"/>
+      <stop offset=".55" stop-color="#9aa5ab"/>
+      <stop offset="1" stop-color="#525e65"/>
+    </linearGradient>
+    <radialGradient id="vignette" cx="50%" cy="45%" r="72%">
+      <stop offset="0" stop-color="#3a444a" stop-opacity="0"/>
+      <stop offset="1" stop-color="#10161a" stop-opacity=".58"/>
+    </radialGradient>
+    <symbol id="seatframe" viewBox="0 0 800 440">
+      <rect width="800" height="440" fill="#242c31"/>
+      <rect y="300" width="800" height="140" fill="#1b2226"/>
+      <path d="M0 340 L800 300 L800 440 L0 440 Z" fill="#20282d"/>
+      <path d="M110 332 L245 78 H565 L700 332 Z" fill="none" stroke="#8b969c" stroke-width="14"/>
+      <path d="M200 332 L292 132 H518 L610 332" fill="none" stroke="#5d696f" stroke-width="10"/>
+      <path d="M110 332 H700" stroke="#aeb8bd" stroke-width="6"/>
+      <circle cx="430" cy="248" r="44" fill="url(#metal)" stroke="#d9dfe2" stroke-width="4"/>
+      <circle cx="430" cy="248" r="14" fill="#1b2226"/>
+      <circle cx="430" cy="248" r="5" fill="#8b969c"/>
+      <circle cx="250" cy="248" r="30" fill="url(#metal)" stroke="#d9dfe2" stroke-width="3"/>
+      <circle cx="250" cy="248" r="10" fill="#1b2226"/>
+      <rect x="356" y="174" width="148" height="148" fill="none" stroke="#d9dfe2" stroke-width="2" stroke-dasharray="8 6"/>
+      <path d="M356 200 V174 H382 M504 174 H530 V200 M530 296 V322 H504 M382 322 H356 V296" fill="none" stroke="#d9dfe2" stroke-width="3"/>
+      <rect width="800" height="440" fill="url(#vignette)"/>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- ============================================================
+     SCREEN 1 — 班次账本 / shift ledger
+     ============================================================ -->
+<section class="screen screen-1">
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark">Visi<b>SOP</b></div>
+      <div class="sub">运行账本</div>
+    </div>
+    <div class="topmeta">2026-10-27 周二 · 早班 08:00–16:00</div>
+    <nav class="nav">
+      <a class="active" href="#">账本</a>
+      <a href="#">告警 <span class="count">3</span></a>
+      <a href="#">SOP</a>
+      <a href="#">系统</a>
+    </nav>
+    <div class="topright">
+      <span class="live">WS 已连接</span>
+      <span class="clock">现在 12:42:10</span>
+      <span class="user">王珂 · 线长</span>
+    </div>
+  </header>
+
+  <div class="ledger">
+    <div class="timeline-wrap">
+      <div class="ruler-row">
+        <div class="ruler-label">工位 / 相机</div>
+        <div class="ruler">
+          <div class="tick" style="left:0%"><span>08:00</span></div>
+          <div class="tick minor" style="left:10.64%"></div>
+          <div class="tick" style="left:21.28%"><span>09:00</span></div>
+          <div class="tick minor" style="left:31.91%"></div>
+          <div class="tick" style="left:42.55%"><span>10:00</span></div>
+          <div class="tick minor" style="left:53.19%"></div>
+          <div class="tick" style="left:63.83%"><span>11:00</span></div>
+          <div class="tick minor" style="left:74.47%"></div>
+          <div class="tick" style="left:85.11%"><span>12:00</span></div>
+          <div class="tick now" style="left:100%"><span>现在 12:42</span></div>
+        </div>
+      </div>
+
+      <div class="lanes">
+        <div class="grid-lines">
+          <i class="major" style="left:0%"></i>
+          <i style="left:10.64%"></i>
+          <i class="major" style="left:21.28%"></i>
+          <i style="left:31.91%"></i>
+          <i class="major" style="left:42.55%"></i>
+          <i style="left:53.19%"></i>
+          <i class="major" style="left:63.83%"></i>
+          <i style="left:74.47%"></i>
+          <i class="major" style="left:85.11%"></i>
+          <i style="left:95.74%"></i>
+        </div>
+
+        <div class="group-head">
+          <span class="code">ST-01</span><span class="name">座椅骨架装配</span><span class="tag">工艺通道</span>
+        </div>
+
+        <div class="lane">
+          <div class="lane-label"><div class="lane-name">执行</div><div class="lane-sub">seat_assembly_basic v3</div></div>
+          <div class="lane-body">
+            <div class="band" style="left:4.26%;width:5.67%"><div class="label">#1838</div><div class="ticks"><i style="left:34%"></i><i style="left:67%"></i></div></div>
+            <div class="band" style="left:14.54%;width:5.67%"><div class="label">#1839</div><div class="ticks"><i style="left:34%"></i><i style="left:67%"></i></div></div>
+            <div class="band" style="left:24.82%;width:5.67%"><div class="label">#1840</div><div class="ticks"><i style="left:34%"></i><i style="left:67%"></i></div></div>
+            <div class="band" style="left:38.30%;width:5.67%"><div class="label">#1841</div><div class="ticks"><i style="left:34%"></i><i style="left:67%"></i></div></div>
+            <div class="band selected" style="left:53.90%;width:7.33%">
+              <div class="seg ok" style="left:0;width:24.4%"></div>
+              <div class="seg review" style="left:24.4%;width:75.6%"></div>
+              <div class="label" style="color:var(--cobalt)">#1842</div>
+            </div>
+            <div class="band" style="left:65.60%;width:5.67%"><div class="label">#1843</div><div class="ticks"><i style="left:34%"></i><i style="left:67%"></i></div></div>
+            <div class="band" style="left:77.30%;width:5.67%"><div class="label">#1844</div><div class="ticks"><i style="left:34%"></i><i style="left:67%"></i></div></div>
+            <div class="band" style="left:97.18%;width:2.82%;border-color:var(--ochre);background:rgba(168,121,31,.08)"><div class="label" style="color:var(--ochre)">#1845</div></div>
+            <div class="sel-line" style="left:55.74%"><span class="cap">10:37:12</span></div>
+            <div class="nowline"></div>
+          </div>
+        </div>
+
+        <div class="lane">
+          <div class="lane-label"><div class="lane-name">CAM-L 左前</div><div class="lane-sub">已连接 · 30 fps</div></div>
+          <div class="lane-body">
+            <div class="dot" style="left:4.8%"></div><div class="dot" style="left:6.2%"></div><div class="dot" style="left:8.1%"></div>
+            <div class="dot" style="left:15.1%"></div><div class="dot" style="left:16.6%"></div><div class="dot" style="left:18.4%"></div>
+            <div class="dot" style="left:25.4%"></div><div class="dot" style="left:26.9%"></div><div class="dot" style="left:28.7%"></div>
+            <div class="dot" style="left:38.9%"></div><div class="dot" style="left:40.4%"></div><div class="dot" style="left:42.2%"></div>
+            <div class="dot review" style="left:54.2%"></div><div class="dot" style="left:55.0%"></div>
+            <div class="dot review" style="left:55.74%"></div>
+            <div class="dot" style="left:66.2%"></div><div class="dot" style="left:67.7%"></div><div class="dot" style="left:69.5%"></div>
+            <div class="dot" style="left:77.9%"></div><div class="dot" style="left:79.4%"></div><div class="dot" style="left:81.2%"></div>
+            <div class="dot review" style="left:97.8%"></div><div class="dot" style="left:98.6%"></div>
+            <div class="nowline"></div>
+          </div>
+        </div>
+
+        <div class="lane">
+          <div class="lane-label"><div class="lane-name">CAM-R 右前</div><div class="lane-sub" style="color:var(--slate)">断流 10:36:08–10:39:20</div></div>
+          <div class="lane-body">
+            <div class="dot" style="left:4.8%"></div><div class="dot" style="left:6.2%"></div><div class="dot" style="left:8.1%"></div>
+            <div class="dot" style="left:15.1%"></div><div class="dot" style="left:16.6%"></div><div class="dot" style="left:18.4%"></div>
+            <div class="dot" style="left:25.4%"></div><div class="dot" style="left:26.9%"></div><div class="dot" style="left:28.7%"></div>
+            <div class="dot" style="left:38.9%"></div><div class="dot" style="left:40.4%"></div><div class="dot" style="left:42.2%"></div>
+            <div class="dot review" style="left:54.2%"></div><div class="dot" style="left:55.0%"></div>
+            <div class="gap hatch-system" style="left:55.37%;width:1.13%"><span>断流</span></div>
+            <div class="dot alarm" style="left:55.74%"></div>
+            <div class="dot" style="left:66.2%"></div><div class="dot" style="left:67.7%"></div><div class="dot" style="left:69.5%"></div>
+            <div class="dot" style="left:77.9%"></div><div class="dot" style="left:79.4%"></div><div class="dot" style="left:81.2%"></div>
+            <div class="dot review" style="left:97.8%"></div>
+            <div class="nowline"></div>
+          </div>
+        </div>
+
+        <div class="group-head">
+          <span class="code">ST-02</span><span class="name">靠背装配</span><span class="tag">工艺通道</span>
+        </div>
+
+        <div class="lane">
+          <div class="lane-label"><div class="lane-name">执行</div><div class="lane-sub">backrest_assembly v2</div></div>
+          <div class="lane-body">
+            <div class="band" style="left:6.4%;width:4.9%"><div class="label">#2201</div></div>
+            <div class="band" style="left:18.1%;width:4.9%"><div class="label">#2202</div></div>
+            <div class="band" style="left:33.7%;width:4.9%"><div class="label">#2203</div></div>
+            <div class="band" style="left:47.2%;width:4.9%"><div class="label">#2204</div></div>
+            <div class="band" style="left:67.4%;width:4.9%"><div class="label">#2205</div></div>
+            <div class="band" style="left:79.1%;width:4.9%"><div class="label">#2206</div></div>
+            <div class="band" style="left:90.8%;width:4.9%"><div class="label">#2207</div></div>
+            <div class="nowline"></div>
+          </div>
+        </div>
+
+        <div class="lane">
+          <div class="lane-label"><div class="lane-name">CAM-C 正面</div><div class="lane-sub">已连接 · 30 fps</div></div>
+          <div class="lane-body">
+            <div class="dot" style="left:6.8%"></div><div class="dot" style="left:8.0%"></div><div class="dot" style="left:10.4%"></div>
+            <div class="dot" style="left:18.5%"></div><div class="dot" style="left:19.7%"></div><div class="dot" style="left:22.1%"></div>
+            <div class="dot" style="left:34.1%"></div><div class="dot" style="left:35.3%"></div><div class="dot" style="left:37.7%"></div>
+            <div class="dot" style="left:47.6%"></div><div class="dot" style="left:48.8%"></div><div class="dot" style="left:51.2%"></div>
+            <div class="dot" style="left:67.8%"></div><div class="dot" style="left:69.0%"></div><div class="dot" style="left:71.4%"></div>
+            <div class="dot" style="left:79.5%"></div><div class="dot" style="left:80.7%"></div><div class="dot" style="left:83.1%"></div>
+            <div class="dot" style="left:91.2%"></div><div class="dot" style="left:92.4%"></div><div class="dot" style="left:94.8%"></div>
+            <div class="nowline"></div>
+          </div>
+        </div>
+
+        <div class="group-head">
+          <span class="code">ST-03</span><span class="name">预装</span><span class="tag">工艺通道</span>
+        </div>
+
+        <div class="lane">
+          <div class="lane-label"><div class="lane-name">执行</div><div class="lane-sub">无活动执行 · 11:20 起</div></div>
+          <div class="lane-body">
+            <div class="band hatch-system" style="left:70.92%;width:29.08%;top:20px;height:12px;border-style:dashed"></div>
+            <div class="nowline"></div>
+          </div>
+        </div>
+
+        <div class="lane">
+          <div class="lane-label"><div class="lane-name">CAM-L 左前</div><div class="lane-sub">已连接 · 15 fps 采样</div></div>
+          <div class="lane-body">
+            <div class="dot" style="left:55.8%"></div><div class="dot" style="left:61.0%"></div><div class="dot" style="left:66.2%"></div><div class="dot" style="left:71.4%"></div>
+            <div class="dot" style="left:76.6%"></div><div class="dot" style="left:81.8%"></div><div class="dot" style="left:87.0%"></div><div class="dot" style="left:92.2%"></div><div class="dot" style="left:97.4%"></div>
+            <div class="nowline"></div>
+          </div>
+        </div>
+
+        <div class="group-head">
+          <span class="code">SYS</span><span class="name">运行时与证据</span><span class="tag">系统通道</span>
+        </div>
+
+        <div class="lane">
+          <div class="lane-label"><div class="lane-name">RUNTIME-01</div><div class="lane-sub">心跳 12:42:08 · DEGRADED</div></div>
+          <div class="lane-body">
+            <div class="sysline">
+              <span class="bad" style="left:55.37%;width:1.13%"></span>
+              <span class="note" style="left:55.9%">DEGRADED · CAM-R 断流</span>
+            </div>
+            <div class="nowline"></div>
+          </div>
+        </div>
+
+        <div class="lane">
+          <div class="lane-label"><div class="lane-name">证据</div><div class="lane-sub">AVAILABLE · PENDING_VERIFY</div></div>
+          <div class="lane-body">
+            <div class="evsq" style="left:54.3%"></div><div class="evsq" style="left:55.0%"></div>
+            <div class="evsq pending" style="left:55.74%"></div>
+            <div class="evsq" style="left:66.3%"></div><div class="evsq" style="left:67.8%"></div>
+            <div class="evsq" style="left:77.9%"></div><div class="evsq" style="left:79.4%"></div>
+            <div class="evsq pending" style="left:97.9%"></div>
+            <div class="nowline"></div>
+          </div>
+        </div>
+
+        <div class="shift-summary">
+          <div class="txt">本班 <b>8</b> 次执行 · <b>6</b> 完成 · <b>1</b> 复核 · <b>1</b> 进行中 · <b>2</b> 条未处理告警</div>
+          <div class="dist"><i></i><i></i><i></i><i></i><i></i><i></i><i class="review"></i><i class="active"></i></div>
+          <div class="txt" style="margin-left:auto;color:var(--muted)">选中 10:37:12 · 事件 <span class="mono">right_bolt_installed</span></div>
+        </div>
+      </div>
+
+      <div class="detail">
+        <div class="detail-head">
+          <span class="t">选中执行 #1842</span>
+          <span class="k">seat_assembly_basic v3 · 缩放 10 分钟 · 起点 10:32:08</span>
+          <span class="right">打开完整执行 →</span>
+        </div>
+        <div class="detail-ruler">
+          <div class="tick" style="left:0%"><span>10:32</span></div>
+          <div class="tick" style="left:17.72%"><span>10:34</span></div>
+          <div class="tick" style="left:36.71%"><span>10:36</span></div>
+          <div class="tick" style="left:55.70%"><span>10:38</span></div>
+          <div class="tick" style="left:74.68%"><span>10:40</span></div>
+          <div class="tick" style="left:93.67%"><span>10:42</span></div>
+        </div>
+        <div class="detail-band-wrap">
+          <div class="detail-band-label">
+            <div class="t">步骤序列</div>
+            <div class="s">DAG · 6 步 · 依赖已解析</div>
+          </div>
+          <div class="detail-band">
+            <div class="step-seg" style="left:0%;width:9.81%"><div class="n">01</div><div class="nm">放置骨架</div><div class="st">COMPLETED</div></div>
+            <div class="step-seg" style="left:9.81%;width:9.81%"><div class="n">02</div><div class="nm">左侧螺栓</div><div class="st">COMPLETED</div></div>
+            <div class="step-seg review" style="left:19.62%;width:28.48%"><div class="n">03</div><div class="nm">右侧螺栓</div><div class="st">NEEDS_REVIEW</div></div>
+            <div class="step-seg wait" style="left:48.10%;width:51.90%"><div class="n">04–06</div><div class="nm" style="left:auto;right:8px">等待复核 · 后续步骤未开始</div><div class="st" style="left:auto;right:8px">WAITING</div></div>
+            <div class="sel-line" style="left:48.10%"></div>
+          </div>
+        </div>
+        <div class="detail-foot">
+          <span>2 完成</span><span>1 待复核</span><span>3 未开始</span><span>证据 <b>7</b> 件</span><span>模型 <b>bolt-state-detector 2026-10-15</b></span><span style="margin-left:auto;color:var(--ochre)">等待复核 15m28s</span>
+        </div>
+      </div>
+    </div>
+
+    <aside class="casefile">
+      <div class="case-kicker">
+        <span class="label">案卷</span>
+        <span class="case-time mono">10:37:12.418</span>
+      </div>
+      <div class="case-rule"></div>
+      <h2 class="case-title">03 安装右侧螺栓</h2>
+      <div class="case-key">install_right_bolt</div>
+      <div class="case-state">
+        <span class="chip review">NEEDS_REVIEW</span>
+        <span class="chip review">LOW_CONFIDENCE</span>
+        <span class="chip muted">执行 #1842</span>
+      </div>
+
+      <div class="fact">
+        <div class="fact-head"><span class="sw"></span><h3>工艺事实</h3></div>
+        <dl class="rows">
+          <div><dt>执行实例</dt><dd class="mono">#1842 · RUNNING</dd></div>
+          <div><dt>SOP 版本</dt><dd class="mono">seat_assembly_basic v3</dd></div>
+          <div><dt>步骤状态</dt><dd class="mono" style="color:var(--ochre)">NEEDS_REVIEW</dd></div>
+          <div><dt>截止时间</dt><dd class="mono">10:37:12 · 已到期</dd></div>
+          <div><dt>依赖</dt><dd class="mono">install_left_bolt ✓</dd></div>
+        </dl>
+      </div>
+
+      <div class="fact">
+        <div class="fact-head"><span class="sw"></span><h3>视觉事实</h3></div>
+        <dl class="rows">
+          <div><dt>事件</dt><dd class="mono">right_bolt_installed</dd></div>
+          <div><dt>相机</dt><dd class="mono">CAM-L · 斜视角</dd></div>
+          <div><dt>置信度</dt><dd class="mono">0.71 · 阈值 0.92</dd></div>
+          <div><dt>模型</dt><dd class="mono">bolt-state-detector</dd></div>
+          <div><dt>版本</dt><dd class="mono">2026-10-15 · frame 18290</dd></div>
+        </dl>
+      </div>
+
+      <div class="fact">
+        <div class="fact-head"><span class="sw"></span><h3>系统事实</h3></div>
+        <dl class="rows">
+          <div><dt>CAM-R</dt><dd class="mono" style="color:var(--slate)">UNAVAILABLE 10:36:08–10:39:20</dd></div>
+          <div><dt>RUNTIME-01</dt><dd class="mono" style="color:var(--slate)">DEGRADED</dd></div>
+          <div><dt>NTP 偏差</dt><dd class="mono">+12 ms</dd></div>
+          <div><dt>事件延迟</dt><dd class="mono">88 ms</dd></div>
+        </dl>
+      </div>
+
+      <div class="fact">
+        <div class="fact-head"><span class="sw"></span><h3>证据事实</h3></div>
+        <dl class="rows">
+          <div><dt>主证据</dt><dd class="mono">EV-01J8F3… · keyframe</dd></div>
+          <div><dt>SHA-256</dt><dd class="mono">9f3c…a71e</dd></div>
+          <div><dt>状态</dt><dd class="mono" style="color:var(--moss)">AVAILABLE</dd></div>
+          <div><dt>保留至</dt><dd class="mono">2026-11-26</dd></div>
+        </dl>
+        <div class="filmstrip">
+          <div class="thumb selected"><svg viewBox="0 0 800 440"><use href="#seatframe"/></svg><span class="tm">10:36:58</span><span class="bd">EV-01</span></div>
+          <div class="thumb"><svg viewBox="0 0 800 440"><use href="#seatframe"/></svg><span class="tm">10:37:12</span><span class="bd">EV-02</span></div>
+          <div class="thumb"><svg viewBox="0 0 800 440"><use href="#seatframe"/></svg><span class="tm">10:37:26</span><span class="bd" style="color:var(--ochre)">PENDING</span></div>
+        </div>
+      </div>
+
+      <div class="fact">
+        <div class="fact-head"><span class="sw"></span><h3>关联告警</h3></div>
+        <dl class="rows">
+          <div><dt>系统健康</dt><dd class="mono" style="color:var(--slate)">DEVICE_HEALTH · CAM-R 断流</dd></div>
+          <div><dt>工艺合规</dt><dd class="mono">无</dd></div>
+        </dl>
+      </div>
+
+      <div class="decision">
+        <h3>复核决定</h3>
+        <div class="field"><span style="color:var(--ochre)">LOW_CONFIDENCE</span><span>▾</span></div>
+        <div class="field"><span class="ph">补充理由（必填）</span></div>
+        <div class="btnrow">
+          <button class="btn primary">确认完成</button>
+          <button class="btn danger">判为漏步</button>
+        </div>
+        <div class="caption">记录操作者、决定、理由与证据引用。人工决定不覆盖原始模型输出。</div>
+        <div class="audit"><span>resolver v1.2</span><span>事件 2</span><span>复核人 —</span></div>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="statusbar">
+    <span>REST 快照 12:42:07</span><span class="sep"></span>
+    <span>WS 已连接 · 退避重连</span><span class="sep"></span>
+    <span>Asia/Shanghai · 证据保留 30 天</span><span class="sep"></span>
+    <span>数据源：PostgreSQL 投影</span>
+    <span class="right"><span>API p95 84 ms</span><span>Outbox 0</span><span class="warn">复核积压 1</span></span>
+  </footer>
+</section>
+
+<!-- ============================================================
+     SCREEN 2 — NOW 模式 / current execution
+     ============================================================ -->
+<section class="screen screen-2">
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark">Visi<b>SOP</b></div>
+      <div class="sub">运行账本</div>
+    </div>
+    <div class="topmeta">ST-01 · 座椅骨架装配</div>
+    <nav class="nav">
+      <a class="active" href="#">账本</a>
+      <a href="#">告警 <span class="count">3</span></a>
+      <a href="#">SOP</a>
+      <a href="#">系统</a>
+    </nav>
+    <div class="topright">
+      <div class="seg"><span class="on">现在</span><span>历史</span></div>
+      <span class="clock">12:42:10</span>
+      <span class="user">王珂 · 线长</span>
+    </div>
+  </header>
+
+  <div class="now-content">
+    <div class="station-strip">
+      <div class="station selected">
+        <div class="row1"><span class="code">ST-01</span><span class="nm">座椅骨架装配</span><span class="state"><span class="chip review">复核 1</span></span></div>
+        <div class="cur">步骤 03 · 安装右侧螺栓</div>
+        <div class="sub"><span>执行 #1845</span><span>12:34:02 起</span><span class="bad">CAM-R 断流</span></div>
+      </div>
+      <div class="station">
+        <div class="row1"><span class="code">ST-02</span><span class="nm">靠背装配</span><span class="state"><span class="chip ok">运行中</span></span></div>
+        <div class="cur">步骤 05 · 扭矩确认</div>
+        <div class="sub"><span>执行 #2208</span><span>12:31:18 起</span><span>CAM-C 正常</span></div>
+      </div>
+      <div class="station">
+        <div class="row1"><span class="code">ST-03</span><span class="nm">预装</span><span class="state"><span class="chip muted">空闲</span></span></div>
+        <div class="cur">无活动执行</div>
+        <div class="sub"><span>11:20 起</span><span>CAM-L 正常</span></div>
+      </div>
+      <div class="station">
+        <div class="row1"><span class="code">ST-04</span><span class="nm">包装</span><span class="state"><span class="chip system">故障</span></span></div>
+        <div class="cur">相机故障 · 不可用</div>
+        <div class="sub"><span>CAM-P</span><span class="bad">UNAVAILABLE 4m12s</span></div>
+      </div>
+    </div>
+
+    <div class="now-main">
+      <div class="now-left">
+        <div class="exec-head">
+          <div>
+            <div style="display:flex;align-items:baseline;gap:10px"><span class="t">当前执行 #1845</span><span class="chip review">NEEDS_REVIEW</span></div>
+            <div class="k">seat_assembly_basic v3 · 工件 WP-8842 · 操作员 李晨</div>
+          </div>
+          <div class="right">
+            <div class="big">已等待复核 5m52s</div>
+            <div class="small">步骤 03 截止 12:37:06</div>
+          </div>
+        </div>
+
+        <div class="step-list">
+          <div class="step-row done">
+            <div class="step-idx">01</div>
+            <div class="step-main"><div class="nm">放置骨架</div><div class="ky">place_frame</div></div>
+            <div class="step-state"><span class="chip ok">COMPLETED</span></div>
+            <div class="step-time">12:34:02</div>
+          </div>
+          <div class="step-row done">
+            <div class="step-idx">02</div>
+            <div class="step-main"><div class="nm">安装左侧螺栓</div><div class="ky">install_left_bolt</div></div>
+            <div class="step-state"><span class="chip ok">COMPLETED</span></div>
+            <div class="step-time">12:35:06</div>
+          </div>
+          <div class="step-row active">
+            <div class="step-idx">03</div>
+            <div class="step-main"><div class="nm">安装右侧螺栓</div><div class="ky">install_right_bolt</div></div>
+            <div class="step-state"><span class="chip review">NEEDS_REVIEW</span></div>
+            <div class="step-time">12:36:18</div>
+          </div>
+          <div class="step-expanded">
+            <div class="txt"><b>CAM-R 12:36:08 起断流</b><br>CAM-L 斜视角置信度 0.71，低于 0.92 阈值；证据 2 件，1 件待校验。</div>
+            <div class="mini-ev">
+              <div class="th"><svg viewBox="0 0 800 440"><use href="#seatframe"/></svg></div>
+              <div class="th"><svg viewBox="0 0 800 440"><use href="#seatframe"/></svg></div>
+            </div>
+            <div class="act"><button class="btn primary">打开案卷</button></div>
+          </div>
+          <div class="step-row">
+            <div class="step-idx">04</div>
+            <div class="step-main"><div class="nm">确认两侧螺栓</div><div class="ky">verify_both_bolts</div></div>
+            <div class="step-state"><span class="chip muted">WAITING</span></div>
+            <div class="step-time">—</div>
+          </div>
+          <div class="step-row">
+            <div class="step-idx">05</div>
+            <div class="step-main"><div class="nm">安装靠背</div><div class="ky">attach_backrest</div></div>
+            <div class="step-state"><span class="chip muted">WAITING</span></div>
+            <div class="step-time">—</div>
+          </div>
+          <div class="step-row">
+            <div class="step-idx">06</div>
+            <div class="step-main"><div class="nm">扭矩确认</div><div class="ky">torque_check</div></div>
+            <div class="step-state"><span class="chip muted">WAITING</span></div>
+            <div class="step-time">—</div>
+          </div>
+        </div>
+
+        <div class="recent">
+          <div class="h"><span class="t">最近事件</span><span class="k">最近 5 分钟 · 按 occurred_at</span></div>
+          <div class="event-row"><span class="tm">12:36:18.418</span><span class="ty">right_bolt_installed · CAM-L · 0.71</span><span class="st" style="color:var(--ochre)">NEEDS_REVIEW</span></div>
+          <div class="event-row"><span class="tm">12:36:08.004</span><span class="ty">camera.disconnected · CAM-R</span><span class="st" style="color:var(--slate)">DEVICE_HEALTH</span></div>
+          <div class="event-row"><span class="tm">12:35:06.220</span><span class="ty">left_bolt_installed · CAM-L · 0.94</span><span class="st" style="color:var(--moss)">ACCEPTED</span></div>
+        </div>
+      </div>
+
+      <div class="now-right">
+        <div>
+          <div class="panel-h"><span class="t">实时预览</span><span class="k">CAM-L 左前</span><span class="right" style="color:var(--moss)">LIVE 30 fps</span></div>
+          <div class="feed">
+            <svg viewBox="0 0 800 440"><use href="#seatframe"/></svg>
+            <div class="overlay"><span class="dot"></span>LIVE · 预览流不作为证据</div>
+            <div class="stamp">12:42:10.006</div>
+            <div class="note">PREVIEW</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="panel-h"><span class="t">证据</span><span class="k">选中事件 12:36:18</span><span class="right" style="color:var(--moss)">AVAILABLE</span></div>
+          <div class="evidence-mini">
+            <div class="img"><svg viewBox="0 0 800 440"><use href="#seatframe"/></svg></div>
+            <div class="meta">
+              <div class="t">右侧螺栓 · 关键帧</div>
+              <div class="k">EV-01J8F3… · SHA-256 9f3c…a71e</div>
+              <div class="k">frame 18290 · 2026-10-27 12:36:18.418</div>
+              <div class="chips"><span class="chip ok">AVAILABLE</span><span class="chip muted">keyframe</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="health">
+          <div class="panel-h"><span class="t">系统健康</span><span class="k">与工艺判定分开记录</span></div>
+          <div class="health-row"><span class="nm">CAM-L 左前</span><span class="v">30 fps · 延迟 84 ms</span><span class="chip ok">HEALTHY</span></div>
+          <div class="health-row"><span class="nm">CAM-R 右前</span><span class="v">断流 6m02s</span><span class="chip system">UNAVAILABLE</span></div>
+          <div class="health-row"><span class="nm">RUNTIME-01</span><span class="v">心跳 12:42:08</span><span class="chip system">DEGRADED</span></div>
+          <div class="health-row"><span class="nm">API</span><span class="v">p95 84 ms</span><span class="chip ok">HEALTHY</span></div>
+          <div class="health-row"><span class="nm">OUTBOX</span><span class="v">未投递 0</span><span class="chip ok">HEALTHY</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mini-timeline">
+      <div class="h"><span class="t">当前执行时间线</span><span class="k">#1845 · 12:34:02–现在 · 缩放 10 分钟</span><span class="right">切换到历史账本 →</span></div>
+      <div class="mini-track">
+        <div class="seg ok" style="left:20.33%;width:10.67%"><span class="l">01 放置骨架</span></div>
+        <div class="seg ok" style="left:31.00%;width:12.00%"><span class="l">02 左侧螺栓</span></div>
+        <div class="seg review" style="left:43.00%;width:57.00%"><span class="l">03 右侧螺栓 · 待复核</span></div>
+        <div class="now"></div>
+      </div>
+      <div class="mini-ticks"><span>12:32</span><span>12:34</span><span>12:36</span><span>12:38</span><span>12:40</span><span>12:42</span></div>
+    </div>
+  </div>
+
+  <footer class="statusbar">
+    <span>REST 快照 12:42:07</span><span class="sep"></span>
+    <span>WS 已连接 · 退避重连</span><span class="sep"></span>
+    <span>Asia/Shanghai · 证据保留 30 天</span><span class="sep"></span>
+    <span>数据源：PostgreSQL 投影</span>
+    <span class="right"><span>API p95 84 ms</span><span>Outbox 0</span><span class="warn">复核积压 1</span></span>
+  </footer>
+</section>
+
+<!-- ============================================================
+     SCREEN 3 — 复核案卷 / review dossier
+     ============================================================ -->
+<section class="screen screen-3">
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark">Visi<b>SOP</b></div>
+      <div class="sub">复核案卷</div>
+    </div>
+    <div class="topmeta">执行 #1845 · ST-01 · 步骤 03</div>
+    <nav class="nav">
+      <a href="#">← 返回账本</a>
+      <a class="active" href="#">案卷</a>
+    </nav>
+    <div class="topright">
+      <span class="chip review">NEEDS_REVIEW</span>
+      <span class="clock">12:42:10</span>
+      <span class="user">王珂 · 线长</span>
+    </div>
+  </header>
+
+  <div class="dossier">
+    <aside class="rail">
+      <div class="kicker">执行实例</div>
+      <div class="title">#1845</div>
+      <div class="sub">seat_assembly_basic v3</div>
+      <div class="rule"></div>
+      <div class="vrail">
+        <div class="vstep done"><span class="dot"></span><div class="t">01 放置骨架</div><div class="k">place_frame</div><div class="tm">12:34:02 · 完成</div></div>
+        <div class="vstep done"><span class="dot"></span><div class="t">02 安装左侧螺栓</div><div class="k">install_left_bolt</div><div class="tm">12:35:06 · 完成</div></div>
+        <div class="vstep review"><span class="dot"></span><div class="t">03 安装右侧螺栓</div><div class="k">install_right_bolt</div><div class="tm">12:36:18 · 待复核</div></div>
+        <div class="vstep"><span class="dot"></span><div class="t">04 确认两侧螺栓</div><div class="k">verify_both_bolts</div><div class="tm">等待上游</div></div>
+        <div class="vstep"><span class="dot"></span><div class="t">05 安装靠背</div><div class="k">attach_backrest</div><div class="tm">等待上游</div></div>
+        <div class="vstep"><span class="dot"></span><div class="t">06 扭矩确认</div><div class="k">torque_check</div><div class="tm">等待上游</div></div>
+      </div>
+      <div class="rail-summary">
+        <div class="row"><span>开始</span><span class="v">12:34:02.118</span></div>
+        <div class="row"><span>当前步骤</span><span class="v">03 / 06</span></div>
+        <div class="row"><span>已运行</span><span class="v">8m08s</span></div>
+        <div class="row"><span>证据</span><span class="v">2 件 · 1 可用</span></div>
+        <div class="row"><span>来源</span><span class="v">CAM-L / CAM-R</span></div>
+      </div>
+    </aside>
+
+    <main class="center">
+      <div class="center-head">
+        <span class="t">证据 01 / 02</span>
+        <span class="k">CAM-L · frame 18290 · 12:36:18.418</span>
+        <span class="right"><span class="chip muted">keyframe</span><span class="chip ok">AVAILABLE</span></span>
+      </div>
+      <div class="viewer">
+        <svg viewBox="0 0 800 440"><use href="#seatframe"/></svg>
+        <div class="tl"><span class="dot"></span>CAM-L · 左前 · 斜视角</div>
+        <div class="tr"><span class="chip muted">EVIDENCE</span></div>
+        <div class="roi-label">ROI · bolt_zone_right</div>
+        <div class="bl">12:36:18.418 · frame 18290 · bolt-state-detector 2026-10-15</div>
+        <div class="br">SHA-256 9f3c…a71e · 保留至 2026-11-26</div>
+      </div>
+      <div class="filmstrip-lg">
+        <div class="frame-lg"><svg viewBox="0 0 800 440"><use href="#seatframe"/></svg><span class="tm">12:36:04</span></div>
+        <div class="frame-lg selected"><svg viewBox="0 0 800 440"><use href="#seatframe"/></svg><span class="tm">12:36:18</span><span class="bd">EV-01</span></div>
+        <div class="frame-lg"><svg viewBox="0 0 800 440"><use href="#seatframe"/></svg><span class="tm">12:36:31</span></div>
+        <div class="frame-lg"><svg viewBox="0 0 800 440"><use href="#seatframe"/></svg><span class="tm">12:36:44</span><span class="bd" style="color:var(--ochre)">PENDING</span></div>
+        <div class="frame-lg"><svg viewBox="0 0 800 440"><use href="#seatframe"/></svg><span class="tm">12:37:06</span></div>
+      </div>
+      <div class="modelout">
+        <div class="h"><span class="t">原始模型输出</span><span class="k">只读 · 人工决定不覆盖</span></div>
+        <pre>{
+  "event_type": "<b>right_bolt_installed</b>",
+  "camera_id": "CAM-L",
+  "confidence": <b>0.71</b>,
+  "threshold": 0.92,
+  "model": "bolt-state-detector / 2026-10-15",
+  "frame_seq": 18290,
+  "occurred_at": "2026-10-27T12:36:18.418+08:00",
+  "attributes": { "side": "right", "roi": "bolt_zone_right" }
+}</pre>
+      </div>
+      <div class="missing">
+        <div class="h"><span class="t">第二视角 · CAM-R 右前</span><span class="k">12:36:08–12:39:20</span><span class="chip system">UNAVAILABLE</span></div>
+        <div class="body">断流期间无关键帧。证据不可用；不以实时预览替代。</div>
+      </div>
+    </main>
+
+    <aside class="dossier-right">
+      <div class="panel-title"><span class="t">四类事实</span><span class="k">分开记录，不合并为一个 status</span></div>
+
+      <div class="fact card">
+        <div class="fact-head"><span class="sw"></span><h3>工艺事实</h3></div>
+        <dl class="rows">
+          <div><dt>执行</dt><dd class="mono">#1845 · RUNNING</dd></div>
+          <div><dt>SOP</dt><dd class="mono">seat_assembly_basic v3</dd></div>
+          <div><dt>步骤</dt><dd class="mono">install_right_bolt · 03</dd></div>
+          <div><dt>状态</dt><dd class="mono" style="color:var(--ochre)">NEEDS_REVIEW</dd></div>
+        </dl>
+      </div>
+
+      <div class="fact card">
+        <div class="fact-head"><span class="sw"></span><h3>视觉事实</h3></div>
+        <dl class="rows">
+          <div><dt>事件</dt><dd class="mono">right_bolt_installed</dd></div>
+          <div><dt>相机</dt><dd class="mono">CAM-L · 斜视角</dd></div>
+          <div><dt>置信度</dt><dd class="mono">0.71 · 阈值 0.92</dd></div>
+          <div><dt>模型</dt><dd class="mono">2026-10-15</dd></div>
+        </dl>
+      </div>
+
+      <div class="fact card">
+        <div class="fact-head"><span class="sw"></span><h3>系统事实</h3></div>
+        <dl class="rows">
+          <div><dt>CAM-R</dt><dd class="mono" style="color:var(--slate)">UNAVAILABLE 6m02s</dd></div>
+          <div><dt>RUNTIME</dt><dd class="mono" style="color:var(--slate)">DEGRADED</dd></div>
+          <div><dt>NTP</dt><dd class="mono">+12 ms</dd></div>
+        </dl>
+      </div>
+
+      <div class="fact card">
+        <div class="fact-head"><span class="sw"></span><h3>证据事实</h3></div>
+        <dl class="rows">
+          <div><dt>主证据</dt><dd class="mono">EV-01J8F3…</dd></div>
+          <div><dt>SHA-256</dt><dd class="mono">9f3c…a71e</dd></div>
+          <div><dt>状态</dt><dd class="mono" style="color:var(--moss)">AVAILABLE</dd></div>
+        </dl>
+      </div>
+
+      <div class="decision-lg">
+        <div class="h">复核决定</div>
+        <div class="reason"><span>LOW_CONFIDENCE</span><span>▾</span></div>
+        <div class="note">补充理由（必填）：例如“CAM-R 断流，CAM-L 斜视角无法确认扭矩标记”。</div>
+        <div class="btnrow"><button class="btn primary">确认完成</button><button class="btn danger">判为漏步</button></div>
+        <div class="caption">记录操作者、决定、理由与证据引用。人工决定不覆盖原始模型输出。</div>
+      </div>
+
+      <div class="audit-lg">
+        <div class="row"><span class="tm">12:36:18</span><span class="tx"><b>系统</b> 创建复核案卷 · LOW_CONFIDENCE</span></div>
+        <div class="row"><span class="tm">12:36:08</span><span class="tx"><b>CAM-R</b> 断流事件 · DEVICE_HEALTH</span></div>
+        <div class="row"><span class="tm">12:35:06</span><span class="tx"><b>步骤 02</b> 完成 · left_bolt_installed</span></div>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="statusbar">
+    <span>REST 快照 12:42:07</span><span class="sep"></span>
+    <span>WS 已连接 · 退避重连</span><span class="sep"></span>
+    <span>Asia/Shanghai · 证据保留 30 天</span><span class="sep"></span>
+    <span>数据源：PostgreSQL 投影</span>
+    <span class="right"><span>API p95 84 ms</span><span>Outbox 0</span><span class="warn">复核积压 1</span></span>
+  </footer>
+</section>
+
+</body>
+</html>
