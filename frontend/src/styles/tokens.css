@@ -1,0 +1,206 @@
+/*
+  VisiSOP design tokens — v1.0 / 检测系统控制台
+  Source of truth: docs/design/DESIGN_SYSTEM.md
+
+  Namespaced --vs-* so these never collide with shadcn's --background /
+  --primary / --border. Every colour, size, gap and radius in the product comes
+  from here; components do not carry hex values or magic pixels.
+
+  Archivo is a variable font (wdth 62–125, wght 100–900) self-hosted under
+  frontend/public/fonts/ — industrial sites have no internet. The condensed
+  width (font-stretch: 62%) is what makes timestamps, counts and IDs read as
+  instrument readouts; body text uses the normal width. CJK falls back to the
+  system UI font because Archivo has no Han glyphs.
+
+  The v0.1 "运行账本 / The Ledger" palette was rejected as a direction. Its
+  token NAMES are kept at the bottom as aliases so the prototype pages keep
+  rendering while they are rebuilt; see the LEGACY block for the removal
+  condition. New work must not use them.
+*/
+
+@font-face {
+  font-family: "Archivo";
+  src: url("/fonts/archivo-var.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-style: normal;
+  font-display: block;
+}
+
+:root {
+  /* ---- surfaces: casing (chrome) → surface (panel) → void (wall) ---- */
+  --vs-casing: #0b0e0f;
+  --vs-surface: #14181a;
+  --vs-surface-2: #1a2022;
+  --vs-void: #050707;
+
+  /* ---- ink ---- */
+  --vs-ink: #ece7da;
+  --vs-ink-secondary: #aab2af;
+  --vs-ink-muted: #78827f;
+
+  /* ---- lines: grid (weak) → line → line-strong ---- */
+  --vs-grid: #222a2c;
+  --vs-line: #283032;
+  --vs-line-strong: #374143;
+
+  /* ---- status: one meaning per hue, never decorative ---- */
+  --vs-ok: #35a15b;
+  --vs-warn: #e9a227;
+  --vs-crit: #d9482f;
+  --vs-off: #6d7779;
+  --vs-on-status: #0c100d; /* text on a filled status chip */
+  --vs-on-off-status: #ffffff; /* the one fill that needs white instead */
+
+  /* Text variants: the raw hues are for fills, borders and marks. Small text
+     uses these lifted steps so it clears 4.5:1 on --vs-surface. */
+  --vs-ok-ink: #7fd39a;
+  --vs-warn-ink: #ffd392;
+  --vs-crit-ink: #ff9d88;
+  --vs-off-ink: #b7bfbc;
+
+  /* ---- data series: charts only, never UI chrome ---- */
+  --vs-series: #4b93d8; /* validated on --vs-surface: L .60, contrast > 3:1 */
+  --vs-series-track: #1c2325;
+  --vs-series-area: color-mix(in srgb, var(--vs-series) 28%, transparent);
+
+  /* ---- state aliases: components use these, not the raw hues ---- */
+  --vs-state-pending: var(--vs-ink-muted);
+  --vs-state-active: var(--vs-ink);
+  --vs-state-completed: var(--vs-ok);
+  --vs-state-failed: var(--vs-crit);
+  --vs-state-timeout: var(--vs-crit);
+  --vs-state-skipped: var(--vs-ink-muted);
+  --vs-state-review: var(--vs-warn);
+  --vs-state-system: var(--vs-off);
+
+  /* ---- type ---- */
+  --vs-font-sans:
+    "Archivo", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC",
+    "Microsoft YaHei", sans-serif;
+
+  --vs-stretch-condensed: 62%; /* numerals, IDs, timestamps, headlines */
+  --vs-stretch-label: 78%; /* wordmark, section labels */
+  --vs-stretch-normal: 100%; /* body text */
+
+  --vs-text-hero: 2.875rem; /* 46px — KPI value, one per panel */
+  --vs-text-display: 1.75rem; /* 28px — screen title / clock */
+  --vs-text-title: 1.0625rem; /* 17px — tile verdict, case title */
+  --vs-text-heading: 0.9375rem; /* 15px — panel title, station name */
+  --vs-text-body: 0.8125rem; /* 13px — Chinese body, table cell */
+  --vs-text-meta: 0.75rem; /* 12px — secondary, axis, legend */
+  --vs-text-micro: 0.6875rem; /* 11px — chips, camera overlays */
+  --vs-text-nano: 0.625rem; /* 10px — resolution/FPS only, never a fact */
+
+  --vs-leading-tight: 1.15;
+  --vs-leading-normal: 1.4;
+  --vs-leading-loose: 1.55;
+
+  --vs-weight-regular: 400;
+  --vs-weight-medium: 500;
+  --vs-weight-semibold: 600;
+  --vs-weight-bold: 700;
+
+  --vs-tracking-condensed: 0.02em;
+  --vs-tracking-label: 0.1em;
+
+  /* ---- space: 4px base, no off-scale values ---- */
+  --vs-space-1: 0.25rem;
+  --vs-space-2: 0.5rem;
+  --vs-space-3: 0.75rem;
+  --vs-space-4: 1rem;
+  --vs-space-5: 1.25rem;
+  --vs-space-6: 1.5rem;
+  --vs-space-8: 2rem;
+  --vs-space-10: 2.5rem;
+  --vs-space-12: 3rem;
+
+  /* ---- layout, measured at 1600×1000 ---- */
+  --vs-topbar: 3.5rem; /* 56px */
+  --vs-filterbar: 3.25rem; /* 52px */
+  --vs-shiftbar: 3.25rem; /* 52px — monitor wall only */
+  --vs-statusbar: 1.875rem; /* 30px */
+  --vs-wall-gap: 0.625rem; /* 10px — the metal between camera tiles */
+  --vs-panel-pad: 1.25rem;
+  --vs-panel-gap: 0.875rem;
+
+  /* ---- geometry: no rounded cards anywhere ---- */
+  --vs-radius: 0;
+  --vs-hairline: 1px;
+  --vs-hairline-strong: 2px;
+  --vs-shadow-panel: none;
+  --vs-shadow-overlay: 0 18px 48px rgb(0 0 0 / 55%);
+
+  /* ---- focus and selection ---- */
+  --vs-focus-ring: 0 0 0 2px var(--vs-casing), 0 0 0 4px var(--vs-ink);
+  --vs-selection: color-mix(in srgb, var(--vs-ink) 18%, transparent);
+
+  /* ---- motion: only to explain a change ---- */
+  --vs-motion-fast: 120ms;
+  --vs-motion-base: 180ms;
+  --vs-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* ---- stacking ---- */
+  --vs-z-base: 0;
+  --vs-z-topbar: 10;
+  --vs-z-statusbar: 20;
+  --vs-z-overlay: 30;
+  --vs-z-dialog: 40;
+  --vs-z-toast: 50;
+}
+
+/*
+  LEGACY — v0.1 Ledger aliases. Kept only so the rejected-direction prototypes
+  (features/stations, features/executions, styles/ledger.css) keep rendering.
+  They inherit the v1.0 palette, so those pages now read as dark by default.
+  Delete this block once the last prototype page is rebuilt on the monitor wall
+  / dashboard grammar. New components must not reference these names.
+*/
+:root {
+  --vs-paper: var(--vs-surface);
+  --vs-paper-raised: var(--vs-surface-2);
+  --vs-rule: var(--vs-line);
+  --vs-rule-strong: var(--vs-line-strong);
+  --vs-cobalt: var(--vs-ink); /* structure / selection / active */
+  --vs-ochre: var(--vs-warn);
+  --vs-ochre-ink: var(--vs-warn);
+  --vs-moss: var(--vs-ok);
+  --vs-vermilion: var(--vs-crit);
+  --vs-slate: var(--vs-off);
+  --vs-on-accent: var(--vs-casing);
+  --vs-cobalt-tint: color-mix(in srgb, var(--vs-ink) 10%, transparent);
+  --vs-ochre-tint: color-mix(in srgb, var(--vs-warn) 12%, transparent);
+  --vs-moss-tint: color-mix(in srgb, var(--vs-ok) 12%, transparent);
+  --vs-vermilion-tint: color-mix(in srgb, var(--vs-crit) 12%, transparent);
+  --vs-slate-tint: color-mix(in srgb, var(--vs-off) 12%, transparent);
+  --vs-font-mono: var(--vs-font-sans);
+  --vs-text-body-lg: var(--vs-text-body);
+  --vs-text-data: var(--vs-text-meta);
+  --vs-text-label: var(--vs-text-micro);
+  --vs-leading-display: var(--vs-leading-tight);
+  --vs-leading-title: var(--vs-leading-normal);
+  --vs-leading-body: var(--vs-leading-loose);
+  --vs-leading-data: var(--vs-leading-normal);
+  --vs-leading-meta: var(--vs-leading-normal);
+  --vs-tracking-display: -0.01em;
+  --vs-layout-topbar: var(--vs-topbar);
+  --vs-layout-statusbar: var(--vs-statusbar);
+  --vs-layout-gutter: var(--vs-space-8);
+  --vs-layout-panel-pad: var(--vs-panel-pad);
+  --vs-layout-group-gap: var(--vs-space-6);
+  --vs-layout-casefile: 24rem;
+  --vs-layout-lane-label: 13rem;
+  --vs-layout-detail: 13.75rem;
+  --vs-layout-station-strip: 6.75rem;
+  --vs-layout-right: 27.5rem;
+  --vs-layout-mini-timeline: 6.25rem;
+  --vs-layout-rail: 13.75rem;
+  --vs-layout-facts: 23.75rem;
+  --vs-layout-max: 100rem;
+  --vs-radius-chip: var(--vs-radius);
+  --vs-radius-control: var(--vs-radius);
+  --vs-radius-panel: var(--vs-radius);
+  --vs-rule-width: var(--vs-hairline);
+  --vs-rule-width-strong: var(--vs-hairline-strong);
+  --vs-ease-standard: var(--vs-ease);
+}
