@@ -279,7 +279,10 @@ def apply(
     now: datetime,
 ) -> TransitionResult:
     if state.status in _TERMINAL_EXECUTION_STATUSES:
-        return TransitionResult()
+        return TransitionResult(
+            reason_code=ReasonCode.LATE_EVENT,
+            detail="execution_terminal",
+        )
 
     if _seen_event(state, event.event_id):
         return TransitionResult(
@@ -317,8 +320,6 @@ def apply(
             ),
         )
 
-        if step_state.status not in (StepStatus.ACTIVE, StepStatus.PENDING):
-            continue
         if step_state.status is StepStatus.PENDING and not _dependencies_satisfied(
             compiled, steps
         ):
@@ -326,6 +327,37 @@ def apply(
             continue
 
         updates.append(EvidenceUpdate(step_key=key, event=matched))
+
+        if step_state.status is StepStatus.COMPLETED:
+            continue
+        if step_state.status is StepStatus.TIMED_OUT:
+            if (
+                matched.accepted
+                and _trigger_conditions(compiled, event.event_type)
+                and _rule_satisfied(
+                    compiled.completion,
+                    (*step_state.matched_events, matched),
+                    step_state.activated_at,
+                )
+            ):
+                steps[key] = dataclasses.replace(
+                    step_state,
+                    status=StepStatus.NEEDS_REVIEW,
+                    reason_code=ReasonCode.LATE_EVENT,
+                )
+                transitions.append(
+                    StepTransition(
+                        step_key=key,
+                        from_status=StepStatus.TIMED_OUT,
+                        to_status=StepStatus.NEEDS_REVIEW,
+                        reason_code=ReasonCode.LATE_EVENT,
+                        matched_event_ids=(event.event_id,),
+                    )
+                )
+            continue
+        if step_state.status not in (StepStatus.ACTIVE, StepStatus.PENDING):
+            continue
+
         if not matched.accepted:
             continue
         if not _trigger_conditions(compiled, event.event_type):
