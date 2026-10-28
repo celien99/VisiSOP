@@ -1,29 +1,19 @@
 import { Link } from "@tanstack/react-router"
-import { Button } from "@/components/ui/button"
 
 const NotFound = () => {
   return (
     <div
-      className="flex min-h-screen items-center justify-center flex-col p-4"
+      className="flex min-h-dvh flex-col items-center justify-center bg-casing px-6 text-ink"
       data-testid="not-found"
     >
-      <div className="flex items-center z-10">
-        <div className="flex flex-col ml-4 items-center justify-center p-4">
-          <span className="text-6xl md:text-8xl font-bold leading-none mb-4">
-            404
-          </span>
-          <span className="text-2xl font-bold mb-2">Oops!</span>
-        </div>
-      </div>
-
-      <p className="text-lg text-muted-foreground mb-4 text-center z-10">
-        The page you are looking for was not found.
+      <p className="vs-page__code">404 / NOT FOUND</p>
+      <h1 className="vs-page__title mt-2">页面不存在</h1>
+      <p className="vs-page__lede text-center">
+        地址可能已更改，或这条记录尚未接入。
       </p>
-      <div className="z-10">
-        <Link to="/">
-          <Button className="mt-4">Go Back</Button>
-        </Link>
-      </div>
+      <Link className="vs-action vs-focus" to="/">
+        返回监控墙
+      </Link>
     </div>
   )
 }
