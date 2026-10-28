@@ -25,6 +25,7 @@ T0 = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
 def step_spec(
     key: str,
     *,
+    step_type: str = "ACTION",
     depends_on: Iterable[str] = (),
     timeout_ms: int | None = 1000,
     required: bool = True,
@@ -36,7 +37,7 @@ def step_spec(
     spec: dict[str, Any] = {
         "key": key,
         "name": key.upper(),
-        "type": "ACTION",
+        "type": step_type,
         "depends_on": list(depends_on),
         "timeout_ms": timeout_ms,
         "completion": completion or event_rule(f"{key}_done"),
@@ -319,6 +320,79 @@ def state_all_completed(graph_ab: SOPGraph) -> ExecutionState:
             "a": StepState(key="a", status=StepStatus.COMPLETED),
             "b": StepState(key="b", status=StepStatus.COMPLETED),
         },
+    )
+
+
+def state_with_left_done(graph: SOPGraph) -> ExecutionState:
+    return advance(
+        graph, initial_state(graph, "e", T0), [make_event("left_done")]
+    )
+
+
+def state_with_left_failed(graph: SOPGraph) -> ExecutionState:
+    return advance(
+        graph, initial_state(graph, "e", T0), [make_event("left_fail")]
+    )
+
+
+@pytest.fixture
+def parallel_join_graph() -> SOPGraph:
+    return make_graph(
+        [
+            step_spec("left"),
+            step_spec("right"),
+            step_spec(
+                "join",
+                step_type="CHECKPOINT",
+                depends_on=("left", "right"),
+                join_policy="ALL_REQUIRED",
+                completion={
+                    "mode": "STATE_RULE",
+                    "all_steps_completed": ["left", "right"],
+                },
+            ),
+            step_spec(
+                "check",
+                step_type="CHECKPOINT",
+                depends_on=("join",),
+                completion={
+                    "mode": "STATE_RULE",
+                    "all_steps_completed": ["left", "right"],
+                },
+            ),
+        ]
+    )
+
+
+@pytest.fixture
+def any_join_graph() -> SOPGraph:
+    return make_graph(
+        [
+            step_spec(
+                "left",
+                failure={
+                    "event_type": "left_fail",
+                    "reason_code": "EVIDENCE_MISSING",
+                },
+            ),
+            step_spec(
+                "right",
+                failure={
+                    "event_type": "right_fail",
+                    "reason_code": "EVIDENCE_MISSING",
+                },
+            ),
+            step_spec(
+                "join",
+                step_type="CHECKPOINT",
+                depends_on=("left", "right"),
+                join_policy={"type": "ANY_OF_N", "n": 1},
+                completion={
+                    "mode": "STATE_RULE",
+                    "all_steps_completed": ["left", "right"],
+                },
+            ),
+        ]
     )
 
 

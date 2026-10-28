@@ -5,7 +5,13 @@ from types import MappingProxyType
 
 from contracts.enums import ProcessingResult, ReasonCode
 from contracts.events import RoutedSOPEvent
-from sop_dsl.schema import CompletionSpec, EventCondition, EventRuleCompletion
+from sop_dsl.schema import (
+    CompletionSpec,
+    EventCondition,
+    EventRuleCompletion,
+    JoinPolicy,
+    StateRuleCompletion,
+)
 
 from app.domain.sop.model import (
     AlarmIntent,
@@ -208,38 +214,87 @@ def _settle_skip_reason(
     return None
 
 
+def _state_rule_satisfied(
+    completion: CompletionSpec, steps: Mapping[str, StepState]
+) -> bool:
+    if not isinstance(completion, StateRuleCompletion):
+        return False
+    if completion.all_steps_completed and not all(
+        steps[key].status in _SATISFIED_STEP_STATUSES
+        for key in completion.all_steps_completed
+    ):
+        return False
+    if completion.any_steps_completed and not any(
+        steps[key].status in _SATISFIED_STEP_STATUSES
+        for key in completion.any_steps_completed
+    ):
+        return False
+    return bool(completion.all_steps_completed or completion.any_steps_completed)
+
+
+def _join_status(
+    policy: JoinPolicy, steps: Mapping[str, StepState], depends_on: tuple[str, ...]
+) -> tuple[StepStatus, ReasonCode | None]:
+    satisfied = sum(
+        1 for key in depends_on if steps[key].status in _SATISFIED_STEP_STATUSES
+    )
+    if policy.type == "ALL_REQUIRED":
+        complete = satisfied == len(depends_on)
+    else:
+        complete = policy.n is not None and satisfied >= policy.n
+    if complete:
+        return StepStatus.COMPLETED, None
+    return StepStatus.NEEDS_REVIEW, ReasonCode.EVIDENCE_MISSING
+
+
+def _join_dependencies_terminal(
+    step: CompiledStep, steps: Mapping[str, StepState]
+) -> bool:
+    return all(steps[key].status in _TERMINAL_STEP_STATUSES for key in step.depends_on)
+
+
 def _settle(
     graph: SOPGraph, steps: dict[str, StepState], now: datetime
 ) -> list[StepTransition]:
     transitions: list[StepTransition] = []
-    changed = True
-    while changed:
+    for _ in range(len(graph.steps) + 1):
         changed = False
+
         for key in graph.order:
             step_state = steps[key]
             if step_state.status is not StepStatus.PENDING:
                 continue
             compiled = graph.steps[key]
             skip_reason = _settle_skip_reason(compiled, steps)
-            if skip_reason is not None:
-                steps[key] = dataclasses.replace(
-                    step_state,
-                    status=StepStatus.SKIPPED,
-                    reason_code=ReasonCode.AUTO_SKIP,
-                    skipped_reason=skip_reason,
-                )
-                transitions.append(
-                    StepTransition(
-                        step_key=key,
-                        from_status=StepStatus.PENDING,
-                        to_status=StepStatus.SKIPPED,
-                        reason_code=ReasonCode.AUTO_SKIP,
-                        detail=skip_reason,
-                    )
-                )
-                changed = True
+            if skip_reason is None:
                 continue
-            if not _dependencies_satisfied(compiled, steps):
+            steps[key] = dataclasses.replace(
+                step_state,
+                status=StepStatus.SKIPPED,
+                reason_code=ReasonCode.AUTO_SKIP,
+                skipped_reason=skip_reason,
+            )
+            transitions.append(
+                StepTransition(
+                    step_key=key,
+                    from_status=StepStatus.PENDING,
+                    to_status=StepStatus.SKIPPED,
+                    reason_code=ReasonCode.AUTO_SKIP,
+                    detail=skip_reason,
+                )
+            )
+            changed = True
+
+        for key in graph.order:
+            step_state = steps[key]
+            if step_state.status is not StepStatus.PENDING:
+                continue
+            compiled = graph.steps[key]
+            if compiled.join_policy is not None:
+                ready = _join_dependencies_terminal(compiled, steps)
+            else:
+                ready = _dependencies_satisfied(compiled, steps)
+            if not ready:
                 continue
             steps[key] = dataclasses.replace(
                 step_state,
@@ -255,7 +310,54 @@ def _settle(
                 )
             )
             changed = True
-    return transitions
+
+        for key in graph.order:
+            step_state = steps[key]
+            compiled = graph.steps[key]
+            if (
+                step_state.status is not StepStatus.ACTIVE
+                or compiled.join_policy is not None
+                or not _state_rule_satisfied(compiled.completion, steps)
+            ):
+                continue
+            steps[key] = dataclasses.replace(step_state, status=StepStatus.COMPLETED)
+            transitions.append(
+                StepTransition(
+                    step_key=key,
+                    from_status=StepStatus.ACTIVE,
+                    to_status=StepStatus.COMPLETED,
+                )
+            )
+            changed = True
+
+        for key in graph.order:
+            step_state = steps[key]
+            compiled = graph.steps[key]
+            if (
+                step_state.status is not StepStatus.ACTIVE
+                or compiled.join_policy is None
+            ):
+                continue
+            to_status, reason_code = _join_status(
+                compiled.join_policy, steps, compiled.depends_on
+            )
+            steps[key] = dataclasses.replace(
+                step_state, status=to_status, reason_code=reason_code
+            )
+            transitions.append(
+                StepTransition(
+                    step_key=key,
+                    from_status=StepStatus.ACTIVE,
+                    to_status=to_status,
+                    reason_code=reason_code,
+                )
+            )
+            changed = True
+
+        if not changed:
+            return transitions
+
+    raise RuntimeError("settle did not converge")
 
 
 def _alarm(
