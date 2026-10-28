@@ -43,14 +43,14 @@ repos:
 
       - id: local-mypy
         name: mypy check
-        entry: uv run mypy backend/app
+        entry: uv run mypy backend/app contracts/contracts sop_dsl/sop_dsl
         require_serial: true
         language: unsupported
         pass_filenames: false
 
       - id: local-ty
         name: ty check
-        entry: uv run ty check backend/app
+        entry: uv run ty check backend/app contracts/contracts sop_dsl/sop_dsl
         require_serial: true
         language: unsupported
         pass_filenames: false

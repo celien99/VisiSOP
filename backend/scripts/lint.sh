@@ -3,7 +3,7 @@
 set -e
 set -x
 
-mypy app
-ty check app
-ruff check app
-ruff format app --check
+mypy app ../contracts/contracts ../sop_dsl/sop_dsl
+ty check app ../contracts/contracts ../sop_dsl/sop_dsl
+ruff check app ../contracts/contracts ../sop_dsl/sop_dsl
+ruff format app ../contracts/contracts ../sop_dsl/sop_dsl --check
