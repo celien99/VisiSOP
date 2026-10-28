@@ -13,6 +13,7 @@ from app.domain.sop.model import (
     EvidenceUpdate,
     ExecutionState,
     ExecutionStatus,
+    ExecutionTransition,
     MatchedEvent,
     SOPGraph,
     StepState,
@@ -25,6 +26,16 @@ _TERMINAL_EXECUTION_STATUSES = frozenset(
     {ExecutionStatus.COMPLETED, ExecutionStatus.ABORTED}
 )
 _SATISFIED_STEP_STATUSES = frozenset({StepStatus.COMPLETED, StepStatus.SKIPPED})
+_COMPLETE_STEP_STATUSES = frozenset({StepStatus.COMPLETED, StepStatus.SKIPPED})
+_TERMINAL_STEP_STATUSES = frozenset(
+    {
+        StepStatus.COMPLETED,
+        StepStatus.FAILED,
+        StepStatus.SKIPPED,
+        StepStatus.TIMED_OUT,
+        StepStatus.NEEDS_REVIEW,
+    }
+)
 
 
 def _deadline(now: datetime, timeout_ms: int | None) -> datetime | None:
@@ -73,6 +84,8 @@ def _event_rule(step: CompiledStep) -> EventRuleCompletion | None:
 
 
 def _references_event(step: CompiledStep, event_type: str) -> bool:
+    if step.failure is not None and step.failure.event_type == event_type:
+        return True
     rule = _event_rule(step)
     if rule is None:
         return False
@@ -211,16 +224,51 @@ def _settle(
 
 
 def _alarm(
-    reason_code: ReasonCode, event: RoutedSOPEvent, step_key: str | None
+    reason_code: ReasonCode,
+    event: RoutedSOPEvent,
+    step_key: str | None,
+    *,
+    category: str = "PROCESS_COMPLIANCE",
+    severity: str = "HIGH",
 ) -> AlarmIntent:
     return AlarmIntent(
-        category="PROCESS_COMPLIANCE",
-        severity="MEDIUM",
+        category=category,
+        severity=severity,
         reason_code=reason_code,
         step_key=step_key,
         source_event_id=event.event_id,
         message=f"{reason_code}: {event.event_type} ({event.event_id})",
     )
+
+
+def _is_low_confidence(step: CompiledStep, event: MatchedEvent) -> bool:
+    return any(
+        condition.event_type == event.event_type
+        and event.confidence < condition.min_confidence
+        for condition in _conditions_for_event(step, event.event_type)
+    )
+
+
+def derive_execution_status(
+    graph: SOPGraph,
+    steps: Mapping[str, StepState],
+    current: ExecutionStatus,
+) -> ExecutionStatus:
+    if any(steps[key].status is StepStatus.NEEDS_REVIEW for key in graph.order):
+        return ExecutionStatus.NEEDS_REVIEW
+    if any(
+        graph.steps[key].required
+        and steps[key].status in (StepStatus.FAILED, StepStatus.TIMED_OUT)
+        for key in graph.order
+    ):
+        return ExecutionStatus.NEEDS_REVIEW
+    if all(
+        (not graph.steps[key].required or steps[key].status in _COMPLETE_STEP_STATUSES)
+        and steps[key].status in _TERMINAL_STEP_STATUSES
+        for key in graph.order
+    ):
+        return ExecutionStatus.COMPLETED
+    return current
 
 
 def _seen_event(state: ExecutionState, event_id: str) -> bool:
@@ -328,6 +376,28 @@ def apply(
 
         updates.append(EvidenceUpdate(step_key=key, event=matched))
 
+        failure = compiled.failure
+        if (
+            step_state.status is StepStatus.ACTIVE
+            and failure is not None
+            and failure.event_type == event.event_type
+        ):
+            steps[key] = dataclasses.replace(
+                step_state,
+                status=StepStatus.FAILED,
+                reason_code=failure.reason_code,
+            )
+            transitions.append(
+                StepTransition(
+                    step_key=key,
+                    from_status=StepStatus.ACTIVE,
+                    to_status=StepStatus.FAILED,
+                    reason_code=failure.reason_code,
+                    matched_event_ids=(event.event_id,),
+                )
+            )
+            continue
+
         if step_state.status is StepStatus.COMPLETED:
             continue
         if step_state.status is StepStatus.TIMED_OUT:
@@ -359,6 +429,16 @@ def apply(
             continue
 
         if not matched.accepted:
+            if _is_low_confidence(compiled, matched):
+                alarms.append(
+                    _alarm(
+                        ReasonCode.LOW_CONFIDENCE,
+                        event,
+                        key,
+                        category="VISION_QUALITY",
+                        severity="MEDIUM",
+                    )
+                )
             continue
         if not _trigger_conditions(compiled, event.event_type):
             continue
@@ -382,9 +462,15 @@ def apply(
     if transitions:
         transitions.extend(_settle(graph, steps, now))
 
+    derived = derive_execution_status(graph, steps, state.status)
     return TransitionResult(
         step_transitions=tuple(transitions),
         evidence_updates=tuple(updates),
+        execution_transition=(
+            ExecutionTransition(from_status=state.status, to_status=derived)
+            if derived is not state.status
+            else None
+        ),
         alarms=tuple(alarms),
         reason_code=(alarms[0].reason_code if alarms and not transitions else None),
     )

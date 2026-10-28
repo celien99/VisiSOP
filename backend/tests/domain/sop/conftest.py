@@ -323,6 +323,21 @@ def state_all_completed(graph_ab: SOPGraph) -> ExecutionState:
 
 
 @pytest.fixture
+def failure_graph() -> SOPGraph:
+    return make_graph(
+        [
+            step_spec(
+                "a",
+                failure={
+                    "event_type": "bad_part",
+                    "reason_code": "EVIDENCE_MISSING",
+                },
+            )
+        ]
+    )
+
+
+@pytest.fixture
 def state_with_a_failed(graph_ab: SOPGraph) -> ExecutionState:
     return make_state(
         graph_ab,
