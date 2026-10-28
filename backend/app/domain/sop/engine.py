@@ -231,6 +231,47 @@ def _seen_event(state: ExecutionState, event_id: str) -> bool:
     )
 
 
+def timed_out(
+    graph: SOPGraph, state: ExecutionState, now: datetime
+) -> list[StepTransition]:
+    if state.status in (
+        ExecutionStatus.PAUSED,
+        ExecutionStatus.COMPLETED,
+        ExecutionStatus.ABORTED,
+    ):
+        return []
+
+    steps = dict(state.steps)
+    transitions: list[StepTransition] = []
+    for key in graph.order:
+        step_state = steps[key]
+        if step_state.status is not StepStatus.ACTIVE:
+            continue
+        if step_state.deadline_at is None or step_state.deadline_at > now:
+            continue
+        if any(not event.accepted for event in step_state.matched_events):
+            to_status = StepStatus.NEEDS_REVIEW
+            reason_code = ReasonCode.LOW_CONFIDENCE
+        else:
+            to_status = StepStatus.TIMED_OUT
+            reason_code = ReasonCode.TIMEOUT
+        steps[key] = dataclasses.replace(
+            step_state, status=to_status, reason_code=reason_code
+        )
+        transitions.append(
+            StepTransition(
+                step_key=key,
+                from_status=StepStatus.ACTIVE,
+                to_status=to_status,
+                reason_code=reason_code,
+            )
+        )
+
+    if transitions:
+        transitions.extend(_settle(graph, steps, now))
+    return transitions
+
+
 def apply(
     graph: SOPGraph,
     state: ExecutionState,
