@@ -40,10 +40,14 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 # Install dependencies
 # Ref: https://docs.astral.sh/uv/guides/integration/docker/#intermediate-layers
+COPY ./contracts/pyproject.toml /app/contracts/pyproject.toml
+
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --frozen --no-install-workspace --package app
+
+COPY ./contracts /app/contracts
 
 COPY ./backend/scripts /app/backend/scripts
 

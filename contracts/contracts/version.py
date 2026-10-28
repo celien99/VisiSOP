@@ -1,0 +1,2 @@
+SCHEMA_VERSION: str = "1.0"
+SUPPORTED_SCHEMA_VERSIONS: frozenset[str] = frozenset({SCHEMA_VERSION})

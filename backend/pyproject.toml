@@ -12,7 +12,11 @@ dependencies = [
     "sqlmodel>=0.0.46,<1.0.0",
     "pydantic-settings<3.0.0,>=2.2.1",
     "sentry-sdk[fastapi]>=2.70.0,<3.0.0",
+    "contracts",
 ]
+
+[tool.uv.sources]
+contracts = { workspace = true }
 
 [dependency-groups]
 dev = [
