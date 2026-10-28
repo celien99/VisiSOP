@@ -11,6 +11,7 @@ from contracts.catalog import (
 from contracts.enums import CameraRole, MessageType, ProcessingResult, ReasonCode
 from contracts.events import ModelRef, Observation, RoutedSOPEvent, VisionEvent
 from contracts.version import SCHEMA_VERSION, SUPPORTED_SCHEMA_VERSIONS
+from contracts.ws import WebSocketMessage
 
 __all__ = [
     "SCHEMA_VERSION",
@@ -26,6 +27,7 @@ __all__ = [
     "RoutedSOPEvent",
     "UnknownEventType",
     "VisionEvent",
+    "WebSocketMessage",
     "catalog_snapshot",
     "correlation_key_for",
     "get_event_type",
