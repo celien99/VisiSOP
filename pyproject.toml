@@ -6,7 +6,7 @@ dev = [
 ]
 
 [tool.uv.workspace]
-members = ["backend", "contracts"]
+members = ["backend", "contracts", "sop_dsl"]
 
 [tool.typos.files]
 extend-exclude = [
