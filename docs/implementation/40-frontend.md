@@ -2,6 +2,7 @@
 
 **基线**：§11.3 预览与证据分离、§13 告警与复核、§14 页面组织
 **约束参考**：§9.3、§11.3
+**设计规范**：`docs/design/`（`DESIGN_BRIEF.md`、`DESIGN_SYSTEM.md`、`INTERACTION_RULES.md`、`VISUAL_QA.md`）；UI 变更前先读，验收按 `VISUAL_QA.md`
 **阶段**：1（最小页）/ 阶段 2–5（完整）
 **依赖**：30 的 OpenAPI；10 的 WS 信封
 

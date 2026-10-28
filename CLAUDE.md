@@ -10,6 +10,8 @@ There is no domain logic: the only API endpoint is `/api/utils/health-check/`, a
 
 The architecture baseline is `docs/AI_SOP_Platform_Architecture_v2.0.md` (how the system runs); `docs/AI_SOP_Architecture_Design_v1.1.md` holds the strict constraints v2.0 does not expand (transition matrix, execution resolution, retention). `docs/implementation/README.md` splits them into work packages with repository paths and records decisions the baselines leave open; read the matching brief before implementing a package.
 
+For UI work, read `AGENTS.md` and `docs/design/` first: `DESIGN_BRIEF.md` (direction and page map), `DESIGN_SYSTEM.md` (tokens and component grammar), `INTERACTION_RULES.md` (state and interaction rules), `VISUAL_QA.md` (acceptance). Design tokens live in `frontend/src/styles/tokens.css`.
+
 ## Setup
 
 ```bash
@@ -112,3 +114,4 @@ High code quality is non-negotiable. Use these skills as part of normal work, no
 - **`/code-review`** — run on the diff **before merging**; fix the findings (use `/code-review ultra` for branch-wide cloud review).
 - **`/simplify`** — quality-only pass for reuse/simplification/efficiency when not hunting bugs.
 - **Superpowers**: `systematic-debugging` (root cause before any fix), `test-driven-development` (test-first for features/bugfixes), `verification-before-completion` (run the command and show real output before claiming done), `requesting-code-review` before merge.
+- 每完成一次任务、新增功能、修复一个 bug 等都要进行提交, 格式符合目前git提交规范, feat、chore、docs、refactor、build等
