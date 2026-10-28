@@ -1,8 +1,10 @@
+import copy
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
 from types import MappingProxyType
+from typing import Any
 
 from contracts.enums import ProcessingResult, ReasonCode
 from sop_dsl.schema import (
@@ -68,6 +70,15 @@ class ExecutionState:
     steps: Mapping[str, StepState] = field(default_factory=_empty_steps)
     started_at: datetime | None = None
     paused_at: datetime | None = None
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> ExecutionState:
+        return ExecutionState(
+            execution_id=self.execution_id,
+            status=self.status,
+            steps=MappingProxyType(copy.deepcopy(dict(self.steps), memo)),
+            started_at=self.started_at,
+            paused_at=self.paused_at,
+        )
 
 
 @dataclass(frozen=True)
