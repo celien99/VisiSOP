@@ -1,7 +1,12 @@
 import pytest
 from pydantic import ValidationError
 
-from video_runtime.config import FileSourceConfig, GigESourceConfig, load_config
+from video_runtime.config import (
+    FileSourceConfig,
+    GigESourceConfig,
+    MvsSourceConfig,
+    load_config,
+)
 
 FILE_CONFIG = """
 runtime_id: runtime-01
@@ -68,6 +73,26 @@ def test_load_config_parses_the_gige_source(tmp_path, monkeypatch) -> None:
     assert source.exposure_us == 8000
     assert source.packet_size == 8192
     assert source.timeout_ms == 2000
+
+
+def test_load_config_parses_the_mvs_source(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("EVIDENCE_DIR", str(tmp_path))
+    path = tmp_path / "demo.yaml"
+    path.write_text(
+        FILE_CONFIG.replace(
+            "    kind: file\n    path: clips/demo.mp4\n    loop: false",
+            "    kind: mvs\n    serial: DA9184675",
+        ),
+        encoding="utf-8",
+    )
+
+    config = load_config(path)
+
+    source = config.camera.source
+    assert isinstance(source, MvsSourceConfig)
+    assert source.serial == "DA9184675"
+    assert source.width == 2048 and source.height == 1536
+    assert source.pixel_format == "BayerRG8"
 
 
 def test_evidence_dir_is_required(tmp_path, monkeypatch) -> None:

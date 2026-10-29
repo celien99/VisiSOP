@@ -30,11 +30,8 @@ camera:
   camera_id: cam-01
   role: overview
   source:
-    kind: gige
-    cti_path: C:/Program Files/MVS/Runtime/Win64_x64/MvProducerGEV.cti
-    serial: null      # serial is preferred; fill it if two cameras exist
-    ip: null          # informational only: selection by IP is unsupported;
-                      # fill `serial` when more than one camera is attached
+    kind: mvs       # HIKROBOT SDK; `gige` uses harvesters over a GenTL producer
+    serial: DA9184675  # preferred; `ip` also works; with neither, first GigE camera
     width: 2048
     height: 1536
     pixel_format: BayerRG8
@@ -42,6 +39,14 @@ camera:
     gain_db: 0.0
     packet_size: 8192
 ```
+
+`kind: mvs` is the supported path for this camera: the MVS GenTL producer
+returns device metadata in a non-UTF-8 codepage that genicam 1.6 cannot decode
+on CPython 3.12 (`UnicodeDecodeError` in `Port.url_info_list`). The generic
+`kind: gige` source stays for producers that return UTF-8 metadata; it needs
+`cti_path`, e.g.
+`C:/Program Files (x86)/Common Files/MVS/Runtime/Win64_x64/MvProducerGEV.cti`
+(the path differs from the MVS application install directory).
 
 `EVIDENCE_DIR` is required by the config loader even though the spike writes no
 evidence:

@@ -10,12 +10,7 @@ from contracts.catalog import catalog_snapshot
 from contracts.runtime import RuntimeHeartbeat, RuntimeRegistration
 
 from video_runtime import __version__
-from video_runtime.config import (
-    FileSourceConfig,
-    GigESourceConfig,
-    RuntimeConfig,
-    load_config,
-)
+from video_runtime.config import RuntimeConfig, load_config
 from video_runtime.event_builder import EventBuilder
 from video_runtime.evidence import EvidenceWriter
 from video_runtime.inference.onnx_yolo import OnnxYoloBackend
@@ -23,9 +18,7 @@ from video_runtime.pipeline import Pipeline
 from video_runtime.publisher import HttpEventPublisher
 from video_runtime.registrar import RuntimeRegistrar
 from video_runtime.server import create_app
-from video_runtime.sources.base import VideoSource
-from video_runtime.sources.file import FileSource
-from video_runtime.sources.gige import GigEHKSource
+from video_runtime.sources.factory import build_source
 from video_runtime.state import RuntimeState
 from video_runtime.zones import ZoneMapper
 
@@ -88,16 +81,6 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def build_source(config: RuntimeConfig) -> VideoSource:
-    source = config.camera.source
-    camera_id = config.camera.camera_id
-    if isinstance(source, GigESourceConfig):
-        return GigEHKSource(source, camera_id=camera_id)
-    if isinstance(source, FileSourceConfig):
-        return FileSource(source.path, camera_id=camera_id, loop=source.loop)
-    raise SystemExit(f"unsupported source kind: {source.kind}")
-
-
 def preflight(config: RuntimeConfig, class_names: list[str]) -> None:
     """Fail at startup, not silently per frame, on a misconfigured zone."""
     registered = catalog_snapshot()
@@ -135,7 +118,7 @@ def build_pipeline(
         writer=EvidenceWriter(config.evidence_dir),
     )
     return Pipeline(
-        build_source(config),
+        build_source(config.camera.source, config.camera.camera_id),
         inference,
         ZoneMapper(config.zones),
         builder,

@@ -9,10 +9,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from video_runtime.config import FileSourceConfig, GigESourceConfig, load_config
-from video_runtime.sources.base import VideoSource
-from video_runtime.sources.file import FileSource
-from video_runtime.sources.gige import GigEHKSource
+from video_runtime.config import load_config
+from video_runtime.sources.factory import build_source
 
 _SAMPLES = 5
 
@@ -26,7 +24,7 @@ def main(argv: list[str] | None = None) -> int:
 
     config = load_config(args.config)
     args.save_dir.mkdir(parents=True, exist_ok=True)
-    source = _build_source(config.camera.source, config.camera.camera_id)
+    source = build_source(config.camera.source, config.camera.camera_id)
 
     source.start()
     intervals: list[float] = []
@@ -71,18 +69,6 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
     return 0
-
-
-def _build_source(source_config: object, camera_id: str) -> VideoSource:
-    if isinstance(source_config, GigESourceConfig):
-        return GigEHKSource(source_config, camera_id=camera_id)
-    if isinstance(source_config, FileSourceConfig):
-        return FileSource(
-            source_config.path,
-            camera_id=camera_id,
-            loop=source_config.loop,
-        )
-    raise SystemExit(f"unsupported source for the camera spike: {source_config!r}")
 
 
 if __name__ == "__main__":

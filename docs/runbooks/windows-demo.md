@@ -105,10 +105,13 @@ Copy the file to `runtime/models/yolo11n.onnx`. Class names are already in
 
 ```bash
 cd runtime
-uv sync --extra gige
+uv sync                 # --extra gige only for a GenTL/harvesters producer
 export EVIDENCE_DIR=C:/VisiSOP/evidence
 uv run python -m video_runtime.main --config config.demo.yaml
 ```
+
+`config.demo.yaml` uses `source.kind: mvs` (the HIKROBOT SDK). Do not open the
+same camera in MVS while the runtime runs: the SDK takes it exclusively.
 
 - Preview: `http://127.0.0.1:8001/stream/cam-01`, snapshot at
   `/snapshot/cam-01`, health at `/health`.

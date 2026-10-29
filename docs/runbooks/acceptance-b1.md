@@ -13,12 +13,12 @@ each row. A `FAIL` needs the observed behavior, not just the label.
 
 | Field | Value |
 |---|---|
-| Windows version | |
-| MVS version + GenTL `cti_path` | |
-| Camera serial / IP | |
-| NIC jumbo frame MTU / camera packet size | |
-| Model file + export command | |
-| Git commit | |
+| Windows version | Windows 11 25H2, build 26200 |
+| MVS version + GenTL `cti_path` | MVS 4.6.1.3; `C:/Program Files (x86)/Common Files/MVS/Runtime/Win64_x64/MvProducerGEV.cti` (not used: the runtime opens the camera with `source.kind: mvs` because this producer returns non-UTF-8 metadata) |
+| Camera serial / IP | `DA9184675` / `10.172.30.1` |
+| NIC jumbo frame MTU / camera packet size | NIC MTU 9000 on `以太网`; packet size from `MV_CC_GetOptimalPacketSize` |
+| Model file + export command | `runtime/models/yolo11n.onnx`; `yolo export model=yolo11n.pt format=onnx opset=17 imgsz=640 simplify=False` |
+| Git commit | `7a911d0` plus the uncommitted MVS source change |
 
 ## Checks
 

@@ -3,10 +3,11 @@ station_id: st-01
 camera:
   camera_id: cam-01
   role: overview
+  # kind: mvs uses HIKROBOT's SDK; kind: gige uses harvesters with a GenTL
+  # producer, whose metadata this producer encodes in a non-UTF-8 codepage.
   source:
-    kind: gige
-    cti_path: C:/Program Files/MVS/Runtime/Win64_x64/MvProducerGEV.cti
-    serial: null
+    kind: mvs
+    serial: DA9184675
     ip: null
     width: 2048
     height: 1536

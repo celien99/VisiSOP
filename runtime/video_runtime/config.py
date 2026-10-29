@@ -17,9 +17,7 @@ class FileSourceConfig(_ConfigModel):
     loop: bool = True
 
 
-class GigESourceConfig(_ConfigModel):
-    kind: Literal["gige"] = "gige"
-    cti_path: Path
+class _GigECameraConfig(_ConfigModel):
     serial: str | None = None
     ip: str | None = None
     width: int = 2048
@@ -33,8 +31,20 @@ class GigESourceConfig(_ConfigModel):
     timeout_ms: int = 2000
 
 
+class GigESourceConfig(_GigECameraConfig):
+    kind: Literal["gige"] = "gige"
+    cti_path: Path
+
+
+class MvsSourceConfig(_GigECameraConfig):
+    """HIKROBOT's own SDK, for producers whose GenTL metadata is not UTF-8."""
+
+    kind: Literal["mvs"] = "mvs"
+
+
 SourceConfig = Annotated[
-    FileSourceConfig | GigESourceConfig, Field(discriminator="kind")
+    FileSourceConfig | GigESourceConfig | MvsSourceConfig,
+    Field(discriminator="kind"),
 ]
 
 
@@ -104,8 +114,9 @@ def load_config(path: Path) -> RuntimeConfig:
 
 def _resolve_paths(data: dict[str, Any], root: Path) -> None:
     source = data["camera"]["source"]
-    path_key = "path" if source["kind"] == "file" else "cti_path"
-    source[path_key] = _resolve(source[path_key], root)
+    path_key = {"file": "path", "gige": "cti_path"}.get(source["kind"])
+    if path_key is not None:
+        source[path_key] = _resolve(source[path_key], root)
     model = data["model"]
     model["onnx_path"] = _resolve(model["onnx_path"], root)
     model["class_names_path"] = _resolve(model["class_names_path"], root)

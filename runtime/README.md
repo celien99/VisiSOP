@@ -8,9 +8,16 @@ Python 3.12, standalone `uv` project with a path dependency on `../contracts`
 
 ```bash
 cd runtime
-uv sync                 # add --extra gige for the Hikvision GigE source
+uv sync                 # add --extra gige for the GenTL/harvesters source
 EVIDENCE_DIR=/path/to/evidence uv run python -m video_runtime.main --config config.demo.yaml
 ```
+
+Camera sources are chosen in the YAML: `file` (replay), `mvs` (HIKROBOT's
+MVS SDK) and `gige` (harvesters over a GenTL producer). The demo camera uses
+`mvs`: the MVS GenTL producer returns device metadata in a non-UTF-8 codepage
+that genicam's bindings cannot decode on CPython 3.12, so its supported SDK is
+the reliable path. `load_sdk()` finds the vendor bindings through
+`MVCAM_COMMON_RUNENV`, which the MVS installer sets.
 
 - Evidence frames are written to `$EVIDENCE_DIR/tmp/{event_id}.jpg`; the backend
   moves and verifies them. A preview is not evidence. `EVIDENCE_DIR` is resolved

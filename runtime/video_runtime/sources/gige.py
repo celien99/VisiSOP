@@ -52,9 +52,16 @@ class GigEHKSource:
                 "harvesters is not installed; run `uv sync --extra gige` "
                 "and check the MVS GenTL producer path"
             )
+        cti_path = self._config.cti_path
+        if not cti_path.is_file():
+            self._error = f"GenTL producer not found: {cti_path}"
+            raise RuntimeError(
+                f"{self._error}; install the MVS SDK runtime and set "
+                "source.cti_path (or use kind: mvs)"
+            )
         try:
             harvester = Harvester()
-            harvester.add_file(str(self._config.cti_path))
+            harvester.add_file(str(cti_path))
             harvester.update()
             self._acquirer = self._create_acquirer(harvester)
             self._configure(self._acquirer.remote_device.node_map)

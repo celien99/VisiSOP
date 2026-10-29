@@ -4,5 +4,6 @@ __pycache__/
 .cache/
 .venv
 models/*.onnx
+models/*.pt
 clips/
 spike/

@@ -107,7 +107,19 @@ def test_bayer_reads_single_channel_component_data() -> None:
     assert frame.data.shape == (4, 6, 3)
 
 
-def test_ip_without_serial_reports_the_unsupported_selection(monkeypatch) -> None:
+def test_missing_cti_path_is_reported_before_harvesters(monkeypatch) -> None:
+    monkeypatch.setattr(gige, "HARVESTERS_AVAILABLE", True)
+    source = GigEHKSource(
+        GigESourceConfig(cti_path=Path("missing.cti")), camera_id="cam-01"
+    )
+    with pytest.raises(RuntimeError, match="GenTL producer not found"):
+        source.start()
+    assert source.health().status == "UNAVAILABLE"
+
+
+def test_ip_without_serial_reports_the_unsupported_selection(
+    monkeypatch, tmp_path
+) -> None:
     class FakeHarvester:
         def add_file(self, path) -> None:
             pass
@@ -120,8 +132,10 @@ def test_ip_without_serial_reports_the_unsupported_selection(monkeypatch) -> Non
 
     monkeypatch.setattr(gige, "HARVESTERS_AVAILABLE", True)
     monkeypatch.setattr(gige, "Harvester", FakeHarvester)
+    cti_path = tmp_path / "x.cti"
+    cti_path.write_bytes(b"")
     source = GigEHKSource(
-        GigESourceConfig(cti_path=Path("x.cti"), ip="192.168.1.10"),
+        GigESourceConfig(cti_path=cti_path, ip="192.168.1.10"),
         camera_id="cam-01",
     )
     with pytest.raises(RuntimeError, match="serial"):
