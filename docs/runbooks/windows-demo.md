@@ -65,6 +65,11 @@ bun install
 bun run dev                         # http://localhost:5173
 ```
 
+Vite proxies `/api` (including the WebSocket) to `http://127.0.0.1:8000`, so
+the browser talks to one origin and CORS is not involved. Keep
+`frontend/.env`'s `VITE_API_URL` empty; setting it to an absolute backend URL
+bypasses the proxy and brings the origin whitelist back into play.
+
 For a production-like run: `cd frontend && bun run build`, then use the
 FastAPI origin at `http://localhost:8000` (it serves the built SPA).
 

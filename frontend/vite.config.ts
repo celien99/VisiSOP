@@ -10,6 +10,16 @@ export default defineConfig({
     outDir: "../backend/app/frontend",
     emptyOutDir: true,
   },
+  server: {
+    proxy: {
+      // Same-origin in dev, matching how FastAPI serves the built SPA.
+      "/api": {
+        target: "http://127.0.0.1:8000",
+        changeOrigin: true,
+        ws: true,
+      },
+    },
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "./src"),
