@@ -75,6 +75,8 @@ class Pipeline:
             while not self._stop.is_set():
                 frame = self._buffer.get(timeout=self._interval_s)
                 if frame is None:
+                    if self._state.status is HealthStatus.STOPPED:
+                        break  # a finite source ended; nothing more will arrive
                     next_sample = self._clock()
                     continue
                 self.process_frame(frame, datetime.now(UTC))
@@ -91,6 +93,10 @@ class Pipeline:
     def stop(self) -> None:
         self._stop.set()
         self._source.stop()
+
+    def close(self) -> None:
+        self._publisher.close()
+        self._inference.close()
 
     def _read_frames(self) -> None:
         while not self._stop.is_set():

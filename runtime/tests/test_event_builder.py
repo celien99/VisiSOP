@@ -96,3 +96,21 @@ def test_invalid_event_type_is_rejected_before_writing_evidence(tmp_path) -> Non
             now=T,
         )
     assert list((tmp_path / "tmp").glob("*.jpg")) == []
+
+
+class FailingWriter(EvidenceWriter):
+    def write(self, event_id, frame, hit) -> str:
+        raise OSError("disk full")
+
+
+def test_evidence_write_failure_still_emits_the_event(tmp_path) -> None:
+    builder = EventBuilder(
+        "st-01", "cam-01", "overview", "yolo11n-coco", "1", FailingWriter(tmp_path)
+    )
+    events = builder.build(
+        make_frame(seq=1, at=T),
+        [ZoneHit(zone=PICKUP, detection=make_detection())],
+        now=T,
+    )
+    assert len(events) == 1
+    assert events[0].evidence_refs == ()

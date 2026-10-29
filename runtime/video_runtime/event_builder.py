@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Callable, Sequence
 from datetime import datetime
 from uuid import UUID, uuid4
@@ -10,6 +11,8 @@ from contracts.version import SCHEMA_VERSION
 from video_runtime.evidence import EvidenceWriter
 from video_runtime.frame import Frame
 from video_runtime.zones import ZoneHit
+
+logger = logging.getLogger(__name__)
 
 EventIdFactory = Callable[[], UUID]
 
@@ -58,7 +61,15 @@ class EventBuilder:
             }
             validate_attributes(hit.zone.event_type, attributes)
             event_id = str(event_id_factory())
-            evidence_ref = self._writer.write(event_id, frame, hit)
+            try:
+                evidence_refs: tuple[str, ...] = (
+                    self._writer.write(event_id, frame, hit),
+                )
+            except OSError as exc:
+                # Keep the observation: the backend turns missing evidence
+                # into NEEDS_REVIEW/EVIDENCE_MISSING for the operator.
+                logger.warning("evidence write failed for %s: %s", event_id, exc)
+                evidence_refs = ()
             events.append(
                 VisionEvent(
                     schema_version=SCHEMA_VERSION,
@@ -72,7 +83,7 @@ class EventBuilder:
                     frame_seq=frame.frame_seq,
                     confidence=hit.detection.confidence,
                     model=ModelRef(name=self._model_name, version=self._model_version),
-                    evidence_refs=(evidence_ref,),
+                    evidence_refs=evidence_refs,
                     attributes=attributes,
                     correlation_key=correlation_key_for(
                         hit.zone.event_type,

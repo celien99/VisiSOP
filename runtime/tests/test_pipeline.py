@@ -1,6 +1,8 @@
+import threading
 import time
 from datetime import timedelta
 
+import cv2
 from conftest import T, make_detection, make_frame
 from contracts.runtime import HealthStatus
 
@@ -12,6 +14,7 @@ from video_runtime.pipeline import Pipeline
 from video_runtime.publisher import PublishOutcome
 from video_runtime.sources.base import SourceHealth
 from video_runtime.sources.fake import FakeSource
+from video_runtime.sources.file import FileSource
 from video_runtime.state import RuntimeState
 from video_runtime.zones import ZoneMapper
 
@@ -26,17 +29,19 @@ PICKUP = ZoneConfig(
 class FakeInference:
     def __init__(self, detections: list[Detection]) -> None:
         self._detections = detections
+        self.closed = False
 
     def infer(self, frame: object) -> list[Detection]:
         return self._detections
 
     def close(self) -> None:
-        pass
+        self.closed = True
 
 
 class RecordingPublisher:
     def __init__(self) -> None:
         self.events: list[object] = []
+        self.closed = False
 
     def publish(self, event: object) -> PublishOutcome:
         self.events.append(event)
@@ -46,6 +51,9 @@ class RecordingPublisher:
 
     def flush(self) -> int:
         return 0
+
+    def close(self) -> None:
+        self.closed = True
 
 
 def make_pipeline(
@@ -160,3 +168,39 @@ def test_run_enforces_the_inference_interval(tmp_path) -> None:
     pipeline.run()
     assert len(calls) == 3
     assert calls[-1] - calls[0] >= 0.18
+
+
+def test_run_exits_when_a_finite_source_ends(tmp_path) -> None:
+    path = tmp_path / "one.avi"
+    writer = cv2.VideoWriter(
+        str(path), cv2.VideoWriter_fourcc(*"MJPG"), 100.0, (64, 48)
+    )
+    writer.write(make_frame().data)
+    writer.release()
+
+    builder = EventBuilder(
+        "st-01", "cam-01", "overview", "yolo11n-coco", "1", EvidenceWriter(tmp_path)
+    )
+    state = RuntimeState(runtime_id="runtime-01")
+    pipeline = Pipeline(
+        FileSource(path, camera_id="cam-01", fps=100.0, loop=False),
+        FakeInference([]),
+        ZoneMapper([PICKUP]),
+        builder,
+        RecordingPublisher(),
+        state,
+    )
+    thread = threading.Thread(target=pipeline.run, daemon=True)
+    thread.start()
+    thread.join(timeout=3)
+    exited = not thread.is_alive()
+    pipeline.stop()
+    thread.join(timeout=1)
+    assert exited
+    assert state.status is HealthStatus.STOPPED
+
+
+def test_close_releases_the_publisher_and_inference(tmp_path) -> None:
+    pipeline, publisher, _ = make_pipeline(tmp_path)
+    pipeline.close()
+    assert publisher.closed is True
