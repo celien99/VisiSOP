@@ -9,6 +9,7 @@ from sqlalchemy.engine import Connection
 from sqlmodel import Session
 
 from app.api.deps import get_db
+from app.api.schemas.execution import ExecutionDetailRead
 from app.application.runtime_registry import runtime_registry
 from app.application.sop_service import create_sop, publish_sop
 from app.core.db import engine
@@ -106,3 +107,15 @@ def published_sop(db_session: Session, now: datetime) -> SOPVersion:
     stored = db_session.get(SOPVersion, version.id)
     assert stored is not None
     return stored
+
+
+@pytest.fixture
+def active_execution(
+    client: TestClient, published_sop: SOPVersion, seeded_station: Station
+) -> ExecutionDetailRead:
+    response = client.post(
+        "/api/stations/st-01/executions",
+        json={"sop_version_id": published_sop.id},
+    )
+    assert response.status_code == 201, response.text
+    return ExecutionDetailRead.model_validate(response.json())

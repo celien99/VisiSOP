@@ -253,6 +253,44 @@ def _join_dependencies_terminal(
     return all(steps[key].status in _TERMINAL_STEP_STATUSES for key in step.depends_on)
 
 
+def _activate_pass(
+    graph: SOPGraph, steps: dict[str, StepState], now: datetime
+) -> list[StepTransition]:
+    transitions: list[StepTransition] = []
+    for key in graph.order:
+        step_state = steps[key]
+        if step_state.status is not StepStatus.PENDING:
+            continue
+        compiled = graph.steps[key]
+        if compiled.join_policy is not None:
+            ready = _join_dependencies_terminal(compiled, steps)
+        else:
+            ready = _dependencies_satisfied(compiled, steps)
+        if not ready:
+            continue
+        steps[key] = dataclasses.replace(
+            step_state,
+            status=StepStatus.ACTIVE,
+            activated_at=now,
+            deadline_at=_deadline(now, compiled.timeout_ms),
+        )
+        transitions.append(
+            StepTransition(
+                step_key=key,
+                from_status=StepStatus.PENDING,
+                to_status=StepStatus.ACTIVE,
+            )
+        )
+    return transitions
+
+
+def activate_ready(
+    graph: SOPGraph, state: ExecutionState, now: datetime
+) -> list[StepTransition]:
+    """Activation pass for callers that resolved a step outside the event stream."""
+    return _activate_pass(graph, dict(state.steps), now)
+
+
 def _settle(
     graph: SOPGraph, steps: dict[str, StepState], now: datetime
 ) -> list[StepTransition]:
@@ -285,30 +323,9 @@ def _settle(
             )
             changed = True
 
-        for key in graph.order:
-            step_state = steps[key]
-            if step_state.status is not StepStatus.PENDING:
-                continue
-            compiled = graph.steps[key]
-            if compiled.join_policy is not None:
-                ready = _join_dependencies_terminal(compiled, steps)
-            else:
-                ready = _dependencies_satisfied(compiled, steps)
-            if not ready:
-                continue
-            steps[key] = dataclasses.replace(
-                step_state,
-                status=StepStatus.ACTIVE,
-                activated_at=now,
-                deadline_at=_deadline(now, compiled.timeout_ms),
-            )
-            transitions.append(
-                StepTransition(
-                    step_key=key,
-                    from_status=StepStatus.PENDING,
-                    to_status=StepStatus.ACTIVE,
-                )
-            )
+        activations = _activate_pass(graph, steps, now)
+        if activations:
+            transitions.extend(activations)
             changed = True
 
         for key in graph.order:

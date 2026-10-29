@@ -413,7 +413,7 @@ def _current_execution(session: Session, station_id: str) -> SOPExecution | None
     return executions[0] if executions else None
 
 
-def _execution_summary(
+def execution_summary_for(
     session: Session, execution: SOPExecution
 ) -> tuple[ExecutionSummaryRead, list[StepSummaryRead], list[StepExecution]]:
     version = session.get(SOPVersion, execution.sop_version_id)
@@ -533,7 +533,7 @@ def _state_for_station(
         steps: list[StepSummaryRead] = []
         step_rows: list[StepExecution] = []
     else:
-        summary, steps, step_rows = _execution_summary(session, execution)
+        summary, steps, step_rows = execution_summary_for(session, execution)
     alarms = _open_alarms(session, station.id)
     process_status = _process_status(camera_view, execution, alarms)
     return StationRuntimeStateRead(
