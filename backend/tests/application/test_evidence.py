@@ -34,3 +34,13 @@ def test_missing_ref_is_explicit_and_path_traversal_is_rejected(
         store.ingest("evt-3", ["../etc/passwd"])
     with pytest.raises(ValueError):
         store.ingest("evt-4", ["C:/Windows/win.ini"])
+
+
+def test_undecodable_file_is_pending_verify(evidence_dir: Path) -> None:
+    (evidence_dir / "tmp").mkdir()
+    source = evidence_dir / "tmp" / "evt-bad.jpg"
+    source.write_bytes(b"not an image")
+    store = EvidenceStore(evidence_dir)
+    [asset] = store.ingest("evt-bad", ["tmp/evt-bad.jpg"])
+    assert asset.status == "PENDING_VERIFY"
+    assert source.exists()

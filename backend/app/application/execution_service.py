@@ -61,7 +61,7 @@ _ACTIVE_EXECUTION_STATUSES = (
     ExecutionStatus.PAUSED,
     ExecutionStatus.NEEDS_REVIEW,
 )
-_ACCEPT_WINDOW = timedelta(minutes=10)
+_ACCEPT_WINDOW = timedelta(milliseconds=settings.EXECUTION_ACCEPT_WINDOW_MS)
 _TIMELINE_ORDER = {
     TimelineItemType.EVENT: 0,
     TimelineItemType.STEP: 1,

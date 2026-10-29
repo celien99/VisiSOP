@@ -2,10 +2,10 @@ from datetime import datetime, timedelta
 
 from sqlmodel import Session, func, select
 
-from app.application.event_service import ingest_event
 from app.api.schemas.execution import ExecutionDetailRead
+from app.application.event_service import ingest_event
 from app.models import Alarm, EventEvidenceLink, SOPExecution, StepExecution
-from contracts.enums import ProcessingResult
+from contracts.enums import ProcessingResult, ReasonCode
 
 
 def test_duplicate_delivery_is_idempotent(
@@ -77,3 +77,39 @@ def test_late_pickup_does_not_complete_the_target_step(
     assert place.status == "ACTIVE"
     alarms = db_session.exec(select(Alarm)).all()
     assert any(alarm.reason_code == "OUT_OF_ORDER" for alarm in alarms)
+
+
+def test_no_active_execution_is_quarantined(
+    db_session: Session, seeded_station, make_zone_event, now: datetime
+) -> None:
+    result = ingest_event(db_session, make_zone_event("evt-q", "pickup", now), now)
+    assert result.result is ProcessingResult.QUARANTINED
+    assert result.detail == "NO_ACTIVE_EXECUTION"
+
+
+def test_late_event_is_quarantined(
+    db_session: Session,
+    active_execution: ExecutionDetailRead,
+    make_zone_event,
+    now: datetime,
+) -> None:
+    at = now + timedelta(minutes=11)
+    result = ingest_event(
+        db_session, make_zone_event("evt-late", "pickup", at), at
+    )
+    assert result.result is ProcessingResult.QUARANTINED
+    assert result.reason_code is ReasonCode.LATE_EVENT
+
+
+def test_unbound_camera_is_quarantined(
+    db_session: Session,
+    active_execution: ExecutionDetailRead,
+    make_zone_event,
+    now: datetime,
+) -> None:
+    event = make_zone_event("evt-c2", "pickup", now).model_copy(
+        update={"camera_id": "cam-02"}
+    )
+    result = ingest_event(db_session, event, now)
+    assert result.result is ProcessingResult.QUARANTINED
+    assert result.reason_code is ReasonCode.CAMERA_CONFLICT

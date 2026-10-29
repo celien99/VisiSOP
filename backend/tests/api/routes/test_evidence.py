@@ -71,6 +71,10 @@ def test_available_evidence_is_served(
     assert response.headers["content-type"] == "image/jpeg"
 
 
+def test_unknown_evidence_is_404(client: TestClient, evidence_dir: Path) -> None:
+    assert client.get("/api/evidence/nope").status_code == 404
+
+
 def test_unavailable_evidence_is_404(
     client: TestClient, db_session: Session, evidence_dir: Path, now: datetime
 ) -> None:

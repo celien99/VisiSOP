@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { utilsHealthCheckData, utilsHealthCheckResponses } from './types.gen';
+import type { alarmsAcknowledgeAlarmData, alarmsAcknowledgeAlarmErrors, alarmsAcknowledgeAlarmResponses, alarmsListAlarmsData, alarmsListAlarmsErrors, alarmsListAlarmsResponses, alarmsResolveAlarmData, alarmsResolveAlarmErrors, alarmsResolveAlarmResponses, camerasCreateCameraData, camerasCreateCameraErrors, camerasCreateCameraResponses, camerasGetCameraHealthData, camerasGetCameraHealthErrors, camerasGetCameraHealthResponses, camerasListCamerasData, camerasListCamerasResponses, camerasStartCameraData, camerasStartCameraErrors, camerasStartCameraResponses, camerasStopCameraData, camerasStopCameraErrors, camerasStopCameraResponses, camerasUpdateCameraData, camerasUpdateCameraErrors, camerasUpdateCameraResponses, eventsAssignEventData, eventsAssignEventErrors, eventsAssignEventResponses, eventsIngestEventData, eventsIngestEventErrors, eventsIngestEventResponses, eventsListEventsData, eventsListEventsErrors, eventsListEventsResponses, evidenceGetEvidenceData, evidenceGetEvidenceErrors, evidenceGetEvidenceResponses, executionsAbortExecutionData, executionsAbortExecutionErrors, executionsAbortExecutionResponses, executionsCreateExecutionData, executionsCreateExecutionErrors, executionsCreateExecutionResponses, executionsGetExecutionData, executionsGetExecutionErrors, executionsGetExecutionResponses, executionsGetExecutionTimelineData, executionsGetExecutionTimelineErrors, executionsGetExecutionTimelineResponses, executionsListExecutionsData, executionsListExecutionsErrors, executionsListExecutionsResponses, executionsPauseExecutionData, executionsPauseExecutionErrors, executionsPauseExecutionResponses, executionsResumeExecutionData, executionsResumeExecutionErrors, executionsResumeExecutionResponses, executionsReviewStepData, executionsReviewStepErrors, executionsReviewStepResponses, executionsSkipStepData, executionsSkipStepErrors, executionsSkipStepResponses, healthGetHealthSummaryData, healthGetHealthSummaryResponses, runtimesListRuntimesData, runtimesListRuntimesResponses, runtimesRegisterRuntimeData, runtimesRegisterRuntimeErrors, runtimesRegisterRuntimeResponses, runtimesRuntimeHeartbeatData, runtimesRuntimeHeartbeatErrors, runtimesRuntimeHeartbeatResponses, sopsCreateSopData, sopsCreateSopErrors, sopsCreateSopResponses, sopsGetSopData, sopsGetSopErrors, sopsGetSopResponses, sopsListSopsData, sopsListSopsResponses, sopsListSopVersionsData, sopsListSopVersionsErrors, sopsListSopVersionsResponses, sopsPublishSopData, sopsPublishSopErrors, sopsPublishSopResponses, sopsUpdateSopDraftData, sopsUpdateSopDraftErrors, sopsUpdateSopDraftResponses, sopsValidateSopData, sopsValidateSopErrors, sopsValidateSopResponses, stationsBindStationCameraData, stationsBindStationCameraErrors, stationsBindStationCameraResponses, stationsCreateStationData, stationsCreateStationErrors, stationsCreateStationResponses, stationsGetStationData, stationsGetStationErrors, stationsGetStationResponses, stationsGetStationRuntimeStateData, stationsGetStationRuntimeStateErrors, stationsGetStationRuntimeStateResponses, stationsListStationRuntimeStatesData, stationsListStationRuntimeStatesResponses, stationsListStationsData, stationsListStationsResponses, utilsHealthCheckData, utilsHealthCheckResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -26,6 +26,513 @@ export class UtilsService {
         return (options?.client ?? client).get<utilsHealthCheckResponses, unknown, ThrowOnError>({
             responseType: 'json',
             url: '/api/utils/health-check/',
+            ...options
+        });
+    }
+}
+
+export class SopsService {
+    /**
+     * List Sops
+     */
+    public static listSops<ThrowOnError extends boolean = true>(options?: Options<sopsListSopsData, ThrowOnError>) {
+        return (options?.client ?? client).get<sopsListSopsResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/sops',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Sop
+     */
+    public static createSop<ThrowOnError extends boolean = true>(options: Options<sopsCreateSopData, ThrowOnError>) {
+        return (options.client ?? client).post<sopsCreateSopResponses, sopsCreateSopErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/sops',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Get Sop
+     */
+    public static getSop<ThrowOnError extends boolean = true>(options: Options<sopsGetSopData, ThrowOnError>) {
+        return (options.client ?? client).get<sopsGetSopResponses, sopsGetSopErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/sops/{sop_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Update Sop Draft
+     */
+    public static updateSopDraft<ThrowOnError extends boolean = true>(options: Options<sopsUpdateSopDraftData, ThrowOnError>) {
+        return (options.client ?? client).patch<sopsUpdateSopDraftResponses, sopsUpdateSopDraftErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/sops/{sop_id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Validate Sop
+     */
+    public static validateSop<ThrowOnError extends boolean = true>(options: Options<sopsValidateSopData, ThrowOnError>) {
+        return (options.client ?? client).post<sopsValidateSopResponses, sopsValidateSopErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/sops/{sop_id}/validate',
+            ...options
+        });
+    }
+    
+    /**
+     * Publish Sop
+     */
+    public static publishSop<ThrowOnError extends boolean = true>(options: Options<sopsPublishSopData, ThrowOnError>) {
+        return (options.client ?? client).post<sopsPublishSopResponses, sopsPublishSopErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/sops/{sop_id}/publish',
+            ...options
+        });
+    }
+    
+    /**
+     * List Sop Versions
+     */
+    public static listSopVersions<ThrowOnError extends boolean = true>(options: Options<sopsListSopVersionsData, ThrowOnError>) {
+        return (options.client ?? client).get<sopsListSopVersionsResponses, sopsListSopVersionsErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/sops/{sop_id}/versions',
+            ...options
+        });
+    }
+}
+
+export class StationsService {
+    /**
+     * List Stations
+     */
+    public static listStations<ThrowOnError extends boolean = true>(options?: Options<stationsListStationsData, ThrowOnError>) {
+        return (options?.client ?? client).get<stationsListStationsResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/stations',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Station
+     */
+    public static createStation<ThrowOnError extends boolean = true>(options: Options<stationsCreateStationData, ThrowOnError>) {
+        return (options.client ?? client).post<stationsCreateStationResponses, stationsCreateStationErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/stations',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * List Station Runtime States
+     */
+    public static listStationRuntimeStates<ThrowOnError extends boolean = true>(options?: Options<stationsListStationRuntimeStatesData, ThrowOnError>) {
+        return (options?.client ?? client).get<stationsListStationRuntimeStatesResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/stations/runtime-state',
+            ...options
+        });
+    }
+    
+    /**
+     * Get Station
+     */
+    public static getStation<ThrowOnError extends boolean = true>(options: Options<stationsGetStationData, ThrowOnError>) {
+        return (options.client ?? client).get<stationsGetStationResponses, stationsGetStationErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/stations/{station_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Get Station Runtime State
+     */
+    public static getStationRuntimeState<ThrowOnError extends boolean = true>(options: Options<stationsGetStationRuntimeStateData, ThrowOnError>) {
+        return (options.client ?? client).get<stationsGetStationRuntimeStateResponses, stationsGetStationRuntimeStateErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/stations/{station_id}/runtime-state',
+            ...options
+        });
+    }
+    
+    /**
+     * Bind Station Camera
+     */
+    public static bindStationCamera<ThrowOnError extends boolean = true>(options: Options<stationsBindStationCameraData, ThrowOnError>) {
+        return (options.client ?? client).post<stationsBindStationCameraResponses, stationsBindStationCameraErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/stations/{station_id}/cameras',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
+
+export class CamerasService {
+    /**
+     * List Cameras
+     */
+    public static listCameras<ThrowOnError extends boolean = true>(options?: Options<camerasListCamerasData, ThrowOnError>) {
+        return (options?.client ?? client).get<camerasListCamerasResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/cameras',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Camera
+     */
+    public static createCamera<ThrowOnError extends boolean = true>(options: Options<camerasCreateCameraData, ThrowOnError>) {
+        return (options.client ?? client).post<camerasCreateCameraResponses, camerasCreateCameraErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/cameras',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Update Camera
+     */
+    public static updateCamera<ThrowOnError extends boolean = true>(options: Options<camerasUpdateCameraData, ThrowOnError>) {
+        return (options.client ?? client).patch<camerasUpdateCameraResponses, camerasUpdateCameraErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/cameras/{camera_id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Start Camera
+     */
+    public static startCamera<ThrowOnError extends boolean = true>(options: Options<camerasStartCameraData, ThrowOnError>) {
+        return (options.client ?? client).post<camerasStartCameraResponses, camerasStartCameraErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/cameras/{camera_id}/start',
+            ...options
+        });
+    }
+    
+    /**
+     * Stop Camera
+     */
+    public static stopCamera<ThrowOnError extends boolean = true>(options: Options<camerasStopCameraData, ThrowOnError>) {
+        return (options.client ?? client).post<camerasStopCameraResponses, camerasStopCameraErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/cameras/{camera_id}/stop',
+            ...options
+        });
+    }
+    
+    /**
+     * Get Camera Health
+     */
+    public static getCameraHealth<ThrowOnError extends boolean = true>(options: Options<camerasGetCameraHealthData, ThrowOnError>) {
+        return (options.client ?? client).get<camerasGetCameraHealthResponses, camerasGetCameraHealthErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/cameras/{camera_id}/health',
+            ...options
+        });
+    }
+}
+
+export class RuntimesService {
+    /**
+     * Register Runtime
+     */
+    public static registerRuntime<ThrowOnError extends boolean = true>(options: Options<runtimesRegisterRuntimeData, ThrowOnError>) {
+        return (options.client ?? client).post<runtimesRegisterRuntimeResponses, runtimesRegisterRuntimeErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/runtimes/register',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Runtime Heartbeat
+     */
+    public static runtimeHeartbeat<ThrowOnError extends boolean = true>(options: Options<runtimesRuntimeHeartbeatData, ThrowOnError>) {
+        return (options.client ?? client).post<runtimesRuntimeHeartbeatResponses, runtimesRuntimeHeartbeatErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/runtimes/{runtime_id}/heartbeat',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * List Runtimes
+     */
+    public static listRuntimes<ThrowOnError extends boolean = true>(options?: Options<runtimesListRuntimesData, ThrowOnError>) {
+        return (options?.client ?? client).get<runtimesListRuntimesResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/runtimes',
+            ...options
+        });
+    }
+}
+
+export class ExecutionsService {
+    /**
+     * Create Execution
+     */
+    public static createExecution<ThrowOnError extends boolean = true>(options: Options<executionsCreateExecutionData, ThrowOnError>) {
+        return (options.client ?? client).post<executionsCreateExecutionResponses, executionsCreateExecutionErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/stations/{station_id}/executions',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * List Executions
+     */
+    public static listExecutions<ThrowOnError extends boolean = true>(options?: Options<executionsListExecutionsData, ThrowOnError>) {
+        return (options?.client ?? client).get<executionsListExecutionsResponses, executionsListExecutionsErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/executions',
+            ...options
+        });
+    }
+    
+    /**
+     * Get Execution
+     */
+    public static getExecution<ThrowOnError extends boolean = true>(options: Options<executionsGetExecutionData, ThrowOnError>) {
+        return (options.client ?? client).get<executionsGetExecutionResponses, executionsGetExecutionErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/executions/{execution_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Pause Execution
+     */
+    public static pauseExecution<ThrowOnError extends boolean = true>(options: Options<executionsPauseExecutionData, ThrowOnError>) {
+        return (options.client ?? client).post<executionsPauseExecutionResponses, executionsPauseExecutionErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/executions/{execution_id}/pause',
+            ...options
+        });
+    }
+    
+    /**
+     * Resume Execution
+     */
+    public static resumeExecution<ThrowOnError extends boolean = true>(options: Options<executionsResumeExecutionData, ThrowOnError>) {
+        return (options.client ?? client).post<executionsResumeExecutionResponses, executionsResumeExecutionErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/executions/{execution_id}/resume',
+            ...options
+        });
+    }
+    
+    /**
+     * Abort Execution
+     */
+    public static abortExecution<ThrowOnError extends boolean = true>(options: Options<executionsAbortExecutionData, ThrowOnError>) {
+        return (options.client ?? client).post<executionsAbortExecutionResponses, executionsAbortExecutionErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/executions/{execution_id}/abort',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Get Execution Timeline
+     */
+    public static getExecutionTimeline<ThrowOnError extends boolean = true>(options: Options<executionsGetExecutionTimelineData, ThrowOnError>) {
+        return (options.client ?? client).get<executionsGetExecutionTimelineResponses, executionsGetExecutionTimelineErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/executions/{execution_id}/timeline',
+            ...options
+        });
+    }
+    
+    /**
+     * Review Step
+     */
+    public static reviewStep<ThrowOnError extends boolean = true>(options: Options<executionsReviewStepData, ThrowOnError>) {
+        return (options.client ?? client).post<executionsReviewStepResponses, executionsReviewStepErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/executions/{execution_id}/steps/{step_key}/review',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Skip Step
+     */
+    public static skipStep<ThrowOnError extends boolean = true>(options: Options<executionsSkipStepData, ThrowOnError>) {
+        return (options.client ?? client).post<executionsSkipStepResponses, executionsSkipStepErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/executions/{execution_id}/steps/{step_key}/skip',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
+
+export class EvidenceService {
+    /**
+     * Get Evidence
+     */
+    public static getEvidence<ThrowOnError extends boolean = true>(options: Options<evidenceGetEvidenceData, ThrowOnError>) {
+        return (options.client ?? client).get<evidenceGetEvidenceResponses, evidenceGetEvidenceErrors, ThrowOnError>({ url: '/api/evidence/{evidence_id}', ...options });
+    }
+}
+
+export class EventsService {
+    /**
+     * List Events
+     */
+    public static listEvents<ThrowOnError extends boolean = true>(options?: Options<eventsListEventsData, ThrowOnError>) {
+        return (options?.client ?? client).get<eventsListEventsResponses, eventsListEventsErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/events',
+            ...options
+        });
+    }
+    
+    /**
+     * Ingest Event
+     */
+    public static ingestEvent<ThrowOnError extends boolean = true>(options: Options<eventsIngestEventData, ThrowOnError>) {
+        return (options.client ?? client).post<eventsIngestEventResponses, eventsIngestEventErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/events',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Assign Event
+     */
+    public static assignEvent<ThrowOnError extends boolean = true>(options: Options<eventsAssignEventData, ThrowOnError>) {
+        return (options.client ?? client).post<eventsAssignEventResponses, eventsAssignEventErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/events/{event_id}/assign',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
+
+export class AlarmsService {
+    /**
+     * List Alarms
+     */
+    public static listAlarms<ThrowOnError extends boolean = true>(options?: Options<alarmsListAlarmsData, ThrowOnError>) {
+        return (options?.client ?? client).get<alarmsListAlarmsResponses, alarmsListAlarmsErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/alarms',
+            ...options
+        });
+    }
+    
+    /**
+     * Acknowledge Alarm
+     */
+    public static acknowledgeAlarm<ThrowOnError extends boolean = true>(options: Options<alarmsAcknowledgeAlarmData, ThrowOnError>) {
+        return (options.client ?? client).post<alarmsAcknowledgeAlarmResponses, alarmsAcknowledgeAlarmErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/alarms/{alarm_id}/acknowledge',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Resolve Alarm
+     */
+    public static resolveAlarm<ThrowOnError extends boolean = true>(options: Options<alarmsResolveAlarmData, ThrowOnError>) {
+        return (options.client ?? client).post<alarmsResolveAlarmResponses, alarmsResolveAlarmErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/alarms/{alarm_id}/resolve',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
+
+export class HealthService {
+    /**
+     * Get Health Summary
+     */
+    public static getHealthSummary<ThrowOnError extends boolean = true>(options?: Options<healthGetHealthSummaryData, ThrowOnError>) {
+        return (options?.client ?? client).get<healthGetHealthSummaryResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/health/summary',
             ...options
         });
     }

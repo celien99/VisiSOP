@@ -44,6 +44,20 @@ def test_quarantined_event_can_be_assigned(
     assert assigned.json()["result"] == "ACCEPTED"
 
 
+def test_assign_rejects_a_non_quarantined_event(
+    client: TestClient,
+    active_execution: ExecutionDetailRead,
+    event_payload: dict[str, object],
+) -> None:
+    accepted = client.post("/api/events", json=event_payload)
+    assert accepted.json()["result"] == "ACCEPTED"
+    response = client.post(
+        "/api/events/evt-1/assign",
+        json={"execution_id": active_execution.id},
+    )
+    assert response.status_code == 409
+
+
 def test_happy_path_completes_the_execution_over_http(
     client: TestClient,
     active_execution: ExecutionDetailRead,

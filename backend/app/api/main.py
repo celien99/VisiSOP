@@ -6,6 +6,7 @@ from app.api.routes import (
     events,
     evidence,
     executions,
+    health,
     runtimes,
     sops,
     stations,
@@ -23,4 +24,5 @@ api_router.include_router(executions.router)
 api_router.include_router(evidence.router)
 api_router.include_router(events.router)
 api_router.include_router(alarms.router)
+api_router.include_router(health.router)
 api_router.include_router(ws.router)

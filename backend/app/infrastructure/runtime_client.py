@@ -9,9 +9,17 @@ class RuntimeUnavailable(RuntimeError):
 
 
 class RuntimeClient:
-    def __init__(self, base_url: str, *, timeout_ms: int = 2000) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        *,
+        timeout_ms: int = 2000,
+        transport: httpx.BaseTransport | None = None,
+    ) -> None:
         self._client = httpx.Client(
-            base_url=base_url.rstrip("/"), timeout=timeout_ms / 1000
+            base_url=base_url.rstrip("/"),
+            timeout=timeout_ms / 1000,
+            transport=transport,
         )
 
     def __enter__(self) -> RuntimeClient:

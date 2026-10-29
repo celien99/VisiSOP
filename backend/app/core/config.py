@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     DATABASE_URL: PostgresDsn
     EVIDENCE_DIR: Path = Path("../evidence")
     RUNTIME_STALE_AFTER_MS: int = 15000
+    EXECUTION_ACCEPT_WINDOW_MS: int = 600000
     OUTBOX_POLL_MS: int = 200
     TIMEOUT_POLL_MS: int = 1000
     WORKERS_ENABLED: bool = True

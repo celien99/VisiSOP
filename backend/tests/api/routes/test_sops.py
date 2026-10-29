@@ -62,3 +62,47 @@ def test_publish_rejects_a_published_version(client: TestClient) -> None:
     sop_id = client.post("/api/sops", json=payload).json()["sop_id"]
     assert client.post(f"/api/sops/{sop_id}/publish").status_code == 200
     assert client.post(f"/api/sops/{sop_id}/publish").status_code == 409
+
+
+def test_duplicate_key_and_invalid_shape(client: TestClient) -> None:
+    payload = {
+        "key": "dup",
+        "name": "Dup",
+        "dsl": json.loads(SOP_PATH.read_text(encoding="utf-8")),
+    }
+    assert client.post("/api/sops", json=payload).status_code == 201
+    assert client.post("/api/sops", json=payload).status_code == 409
+    bad = client.post(
+        "/api/sops", json={"key": "bad-shape", "name": "Bad", "dsl": {"steps": []}}
+    )
+    assert bad.status_code == 422
+
+
+def test_list_detail_and_draft_errors(client: TestClient) -> None:
+    payload = {
+        "key": "listed",
+        "name": "Listed",
+        "dsl": json.loads(SOP_PATH.read_text(encoding="utf-8")),
+    }
+    sop_id = client.post("/api/sops", json=payload).json()["sop_id"]
+    listed = client.get("/api/sops").json()
+    assert [item["key"] for item in listed] == ["listed"]
+    detail = client.get(f"/api/sops/{sop_id}").json()
+    assert detail["versions"][0]["dsl"]["sop_key"] == "listed"
+    assert client.get("/api/sops/nope").status_code == 404
+    assert client.get("/api/sops/nope/versions").status_code == 404
+    assert (
+        client.patch(
+            f"/api/sops/{sop_id}", json={"dsl": {"steps": []}}
+        ).status_code
+        == 422
+    )
+
+
+def test_publish_rejects_invalid_dsl(client: TestClient) -> None:
+    dsl = json.loads(SOP_PATH.read_text(encoding="utf-8"))
+    dsl["steps"][0]["completion"]["all"][0]["event_type"] = "not_registered"
+    sop_id = client.post(
+        "/api/sops", json={"key": "invalid-publish", "name": "Bad", "dsl": dsl}
+    ).json()["sop_id"]
+    assert client.post(f"/api/sops/{sop_id}/publish").status_code == 422
