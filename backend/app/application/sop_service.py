@@ -263,7 +263,10 @@ def _summary(version: SOPVersion) -> SopVersionSummary:
     )
 
 
-def _ordered_steps(session: Session, version: SOPVersion) -> list[SopStepRead]:
+def ordered_step_definitions(
+    session: Session, version: SOPVersion
+) -> list[SOPStepDefinition]:
+    """Step projections in DSL order (JSONB reorders object keys, not arrays)."""
     rows = list(
         session.exec(
             select(SOPStepDefinition).where(
@@ -278,6 +281,10 @@ def _ordered_steps(session: Session, version: SOPVersion) -> list[SopStepRead]:
         if isinstance(step, dict) and isinstance(step.get("key"), str)
     }
     rows.sort(key=lambda row: position.get(row.step_key, len(position)))
+    return rows
+
+
+def _ordered_steps(session: Session, version: SOPVersion) -> list[SopStepRead]:
     return [
         SopStepRead(
             key=row.step_key,
@@ -286,7 +293,7 @@ def _ordered_steps(session: Session, version: SOPVersion) -> list[SopStepRead]:
             required=row.required,
             depends_on=list(row.depends_on),
         )
-        for row in rows
+        for row in ordered_step_definitions(session, version)
     ]
 
 

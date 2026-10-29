@@ -9,10 +9,17 @@ from sqlalchemy.engine import Connection
 from sqlmodel import Session
 
 from app.api.deps import get_db
+from app.application.runtime_registry import runtime_registry
 from app.application.sop_service import create_sop, publish_sop
 from app.core.db import engine
 from app.main import app
-from app.models import SOPVersion
+from app.models import (
+    Camera,
+    SOPVersion,
+    Station,
+    StationCameraBinding,
+)
+from contracts.enums import CameraRole
 
 DEMO_SOP_PATH = Path(__file__).parents[1] / "app" / "seed" / "bottle_transfer.json"
 
@@ -20,6 +27,13 @@ DEMO_SOP_PATH = Path(__file__).parents[1] / "app" / "seed" / "bottle_transfer.js
 @pytest.fixture
 def now() -> datetime:
     return datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
+
+
+@pytest.fixture(autouse=True)
+def _reset_runtime_registry() -> Generator[None]:
+    runtime_registry.clear()
+    yield
+    runtime_registry.clear()
 
 
 @pytest.fixture
@@ -46,6 +60,38 @@ def client(db_session: Session) -> Generator[TestClient]:
     # no `with`: lifespan/workers are not started
     yield TestClient(app)
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def seeded_station(db_session: Session, now: datetime) -> Station:
+    station = Station(
+        id="st-01", code="ST-01", name="演示工位", zone="A", created_at=now
+    )
+    camera = Camera(
+        id="cam-01",
+        code="CAM-01",
+        name="主相机",
+        runtime_id="runtime-01",
+        source_type="gige",
+        source_config={"serial": "demo"},
+        preview_url="http://127.0.0.1:8001/stream/cam-01",
+        snapshot_url="http://127.0.0.1:8001/snapshot/cam-01",
+        created_at=now,
+    )
+    db_session.add(station)
+    db_session.add(camera)
+    db_session.commit()
+    db_session.add(
+        StationCameraBinding(
+            id="bind-01",
+            station_id="st-01",
+            camera_id="cam-01",
+            role=CameraRole.OVERVIEW,
+            valid_from=now,
+        )
+    )
+    db_session.commit()
+    return station
 
 
 @pytest.fixture
