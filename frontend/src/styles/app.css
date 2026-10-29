@@ -861,3 +861,34 @@
     margin-top: var(--vs-space-5);
   }
 }
+
+@layer components {
+  /* Narrow screens: keep labels on one line instead of stacking characters. */
+  .vs-nav__link,
+  .vs-conn,
+  .vs-utility {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 48rem) {
+  /* Two-row shell on narrow screens: brand + state, then the nav. */
+  .vs-topbar {
+    height: auto;
+  }
+  .vs-topbar__inner {
+    flex-wrap: wrap;
+    height: auto;
+    padding: var(--vs-space-2) var(--vs-space-4);
+    row-gap: var(--vs-space-2);
+  }
+  .vs-nav {
+    order: 3;
+    width: 100%;
+    gap: var(--vs-space-4);
+    overflow-x: auto;
+  }
+  .vs-topbar__right {
+    gap: var(--vs-space-3);
+  }
+}
