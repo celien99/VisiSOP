@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import contracts.demo  # noqa: F401  (registers the demo event catalog)
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
