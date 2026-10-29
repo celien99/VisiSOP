@@ -115,8 +115,17 @@ test.beforeEach(async ({ page }) => {
   )
 })
 
-test("invalid DSL blocks validate and publish", async ({ page }) => {
+test("invalid DSL resets a previously valid report and blocks publish", async ({
+  page,
+}) => {
+  await page.route("**/api/sops/sop-1/validate", (route) =>
+    route.fulfill({ json: { valid: true, issues: [] } }),
+  )
   await page.goto("/sops")
+  await page.getByRole("button", { name: "验证" }).click()
+  await expect(page.getByText("校验通过")).toBeVisible()
+  await expect(page.getByRole("button", { name: "发布" })).toBeEnabled()
+
   await page.getByLabel("DSL JSON").fill("{ not json")
   await page.getByRole("button", { name: "验证" }).click()
   await expect(page.getByText("DSL 不是合法 JSON")).toBeVisible()

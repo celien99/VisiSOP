@@ -61,6 +61,9 @@ export const HEALTH_LABEL: Record<string, string> = {
   DEGRADED: "降级",
   UNAVAILABLE: "不可用",
   UNKNOWN: "未知",
+  STARTING: "启动中",
+  STOPPED: "已停止",
+  MISCONFIGURED: "配置错误",
 }
 
 export const REASON_CODE_LABEL: Record<string, string> = {
@@ -75,6 +78,7 @@ export const REASON_CODE_LABEL: Record<string, string> = {
   TIMEOUT: "超时",
   UNEXPECTED_STEP: "意外步骤",
   OUT_OF_ORDER: "顺序错误",
+  AUTO_SKIP: "自动跳过",
 }
 
 export const ALARM_STATUS_LABEL: Record<string, string> = {

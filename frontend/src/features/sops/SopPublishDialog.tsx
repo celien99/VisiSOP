@@ -15,7 +15,7 @@ type SopPublishDialogProps = {
   sopId: string
   version: SopVersionRead
   onClose: () => void
-  onPublished: (versionId: string) => void
+  onPublished: (version: SopVersionRead) => void
 }
 
 export function SopPublishDialog({
@@ -36,13 +36,13 @@ export function SopPublishDialog({
       }
       toast.error("发布失败，请先通过校验")
     },
-    onSuccess: async () => {
+    onSuccess: async (response) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.sops }),
         queryClient.invalidateQueries({ queryKey: queryKeys.sop(sopId) }),
       ])
-      toast.success(`v${version.version} 发布成功`)
-      onPublished(version.id)
+      toast.success(`v${response.data.version} 发布成功`)
+      onPublished(response.data)
       onClose()
     },
   })

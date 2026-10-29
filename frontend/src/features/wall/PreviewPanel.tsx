@@ -7,6 +7,7 @@ type PreviewPanelProps = {
   health: string
   lastFrameAt: string | null
   alt: string
+  stale?: boolean
 }
 
 type PreviewState =
@@ -25,6 +26,7 @@ export function PreviewPanel({
   health,
   lastFrameAt,
   alt,
+  stale = false,
 }: PreviewPanelProps) {
   const [failed, setFailed] = useState(false)
   const [snapshotFailed, setSnapshotFailed] = useState(false)
@@ -87,8 +89,8 @@ export function PreviewPanel({
         }
       />
       <span className="vs-preview__note">
-        <span>{state === "last-frame" ? "最后一帧" : "实时预览"}</span>
-        {state === "last-frame" && lastFrameAt ? (
+        <span>{state === "last-frame" || stale ? "最后一帧" : "实时预览"}</span>
+        {(state === "last-frame" || stale) && lastFrameAt ? (
           <span>{formatTime(lastFrameAt)}</span>
         ) : null}
       </span>

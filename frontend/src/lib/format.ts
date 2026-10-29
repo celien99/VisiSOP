@@ -24,3 +24,18 @@ export function elapsedSince(since: string, serverTime: string): string {
     new Date(serverTime).getTime() - new Date(since).getTime(),
   )
 }
+
+export const PREVIEW_STALE_MS = 10_000
+
+// A healthy camera whose last frame is older than the wall's snapshot cannot
+// be called live (INTERACTION_RULES §1.3/§2.3).
+export function isStale(
+  lastFrameAt: string | null,
+  serverTime: string | null,
+): boolean {
+  if (!lastFrameAt || !serverTime) return true
+  return (
+    new Date(serverTime).getTime() - new Date(lastFrameAt).getTime() >
+    PREVIEW_STALE_MS
+  )
+}

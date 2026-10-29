@@ -13,7 +13,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 type SopDraftEditorProps = {
   sopId: string
   version: SopVersionRead
-  onPublished: (versionId: string) => void
+  onPublished: (version: SopVersionRead) => void
 }
 
 export function SopDraftEditor({

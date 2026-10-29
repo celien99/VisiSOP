@@ -110,7 +110,7 @@ export function ExecutionDetailPage({ executionId }: { executionId: string }) {
     },
   })
 
-  if (executionQuery.isPending) {
+  if (!execution && executionQuery.isPending) {
     return (
       <div className="vs-page">
         <div className="vs-skeleton-card" />
@@ -118,7 +118,7 @@ export function ExecutionDetailPage({ executionId }: { executionId: string }) {
     )
   }
 
-  if (executionQuery.isError || !execution) {
+  if (!execution) {
     return (
       <div className="vs-page">
         <p className="vs-page__code">EXECUTION / {executionId}</p>
@@ -146,6 +146,19 @@ export function ExecutionDetailPage({ executionId }: { executionId: string }) {
     <div className="vs-page">
       <p className="vs-page__code">EXECUTION / {execution.id}</p>
       <h1 className="vs-page__title">执行详情</h1>
+
+      {executionQuery.isError ? (
+        <div className="vs-wall__error" role="alert">
+          <p>刷新失败，显示上次快照。</p>
+          <button
+            className="vs-chip vs-focus"
+            onClick={() => void executionQuery.refetch()}
+            type="button"
+          >
+            重试
+          </button>
+        </div>
+      ) : null}
 
       <header className="vs-detail-head">
         <Link
@@ -180,6 +193,7 @@ export function ExecutionDetailPage({ executionId }: { executionId: string }) {
           {can("PAUSE") ? (
             <button
               className="vs-chip vs-focus"
+              disabled={action.isPending}
               onClick={() => action.mutate({ action: "pause" })}
               type="button"
             >
@@ -189,6 +203,7 @@ export function ExecutionDetailPage({ executionId }: { executionId: string }) {
           {can("RESUME") ? (
             <button
               className="vs-chip vs-focus"
+              disabled={action.isPending}
               onClick={() => action.mutate({ action: "resume" })}
               type="button"
             >
@@ -198,6 +213,7 @@ export function ExecutionDetailPage({ executionId }: { executionId: string }) {
           {can("ABORT") ? (
             <button
               className="vs-chip vs-focus"
+              disabled={action.isPending}
               onClick={() => setAbortOpen(true)}
               type="button"
             >

@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router"
 import type { StationRuntimeStateRead } from "@/client"
 import { StepRail } from "@/features/execution/StepRail"
-import { formatTime } from "@/lib/format"
+import { formatTime, isStale } from "@/lib/format"
 import {
   PROCESS_STATUS_COLOR,
   PROCESS_STATUS_LABEL,
@@ -47,9 +47,11 @@ export function WallCard({ state, focused = false }: WallCardProps) {
       <PreviewPanel
         alt={`${station.code} ${station.name} 画面`}
         health={camera?.health ?? "UNAVAILABLE"}
+        key={`${state.preview_url ?? ""}|${camera?.health ?? ""}`}
         lastFrameAt={state.last_frame_at}
         previewUrl={state.preview_url}
         snapshotUrl={state.snapshot_url}
+        stale={isStale(state.last_frame_at, state.server_time)}
       />
 
       <div className="vs-tile__foot">

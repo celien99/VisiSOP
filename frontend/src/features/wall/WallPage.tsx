@@ -130,51 +130,71 @@ export function WallPage({ search, onSearchChange }: WallPageProps) {
             <div className="vs-skeleton-card" key={key} />
           ))}
         </div>
-      ) : isError ? (
-        <div className="vs-wall">
-          <div className="vs-wall__empty" role="alert">
-            <p>工位快照加载失败。已显示的内容不会被改写。</p>
-            <button
-              className="vs-chip vs-focus"
-              onClick={() => void refetch()}
-              type="button"
-            >
-              重试
-            </button>
-          </div>
-        </div>
-      ) : states.length === 0 ? (
-        <div className="vs-wall">
-          <div className="vs-wall__empty">
-            <p>暂无已配置工位。</p>
-            <p>先在系统中注册工位与相机，监控墙按后端返回的工位逐格显示。</p>
-          </div>
-        </div>
-      ) : visible.length === 0 ? (
-        <div className="vs-wall">
-          <div className="vs-wall__empty">
-            <p>当前筛选没有需要处理的机位。</p>
-            <button
-              className="vs-chip vs-focus"
-              onClick={() =>
-                onSearchChange({ attention: undefined, zone: undefined })
-              }
-              type="button"
-            >
-              清除筛选
-            </button>
-          </div>
-        </div>
       ) : (
-        <div className="vs-wall">
-          {visible.map((state) => (
-            <WallCard
-              focused={search.focus === state.station.id}
-              key={state.station.id}
-              state={state}
-            />
-          ))}
-        </div>
+        <>
+          {isError && states.length > 0 ? (
+            <div className="vs-wall__error" role="alert">
+              <p>刷新失败，显示上次快照。已显示的内容不会被改写。</p>
+              <button
+                className="vs-chip vs-focus"
+                onClick={() => void refetch()}
+                type="button"
+              >
+                重试
+              </button>
+            </div>
+          ) : null}
+          {states.length === 0 ? (
+            <div className="vs-wall">
+              <div className="vs-wall__empty" role="alert">
+                {isError ? (
+                  <>
+                    <p>工位快照加载失败。</p>
+                    <button
+                      className="vs-chip vs-focus"
+                      onClick={() => void refetch()}
+                      type="button"
+                    >
+                      重试
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p>暂无已配置工位。</p>
+                    <p>
+                      先在系统中注册工位与相机，监控墙按后端返回的工位逐格显示。
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+          ) : visible.length === 0 ? (
+            <div className="vs-wall">
+              <div className="vs-wall__empty">
+                <p>当前筛选没有需要处理的机位。</p>
+                <button
+                  className="vs-chip vs-focus"
+                  onClick={() =>
+                    onSearchChange({ attention: undefined, zone: undefined })
+                  }
+                  type="button"
+                >
+                  清除筛选
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="vs-wall">
+              {visible.map((state) => (
+                <WallCard
+                  focused={search.focus === state.station.id}
+                  key={state.station.id}
+                  state={state}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   )

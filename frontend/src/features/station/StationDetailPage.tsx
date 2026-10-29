@@ -8,6 +8,7 @@ import { StatusChip } from "@/components/Common/StatusChip"
 import { ExecutionFacts } from "@/features/execution/ExecutionFacts"
 import { StepRail } from "@/features/execution/StepRail"
 import { PreviewPanel } from "@/features/wall/PreviewPanel"
+import { isStale } from "@/lib/format"
 import { queryKeys } from "@/lib/queryKeys"
 import {
   EXECUTION_STATUS_COLOR,
@@ -92,7 +93,7 @@ export function StationDetailPage({ stationId }: { stationId: string }) {
     },
   })
 
-  if (stateQuery.isPending) {
+  if (!state && stateQuery.isPending) {
     return (
       <div className="vs-page">
         <div className="vs-skeleton-card" />
@@ -100,7 +101,7 @@ export function StationDetailPage({ stationId }: { stationId: string }) {
     )
   }
 
-  if (stateQuery.isError || !state) {
+  if (!state) {
     return (
       <div className="vs-page">
         <p className="vs-page__code">STATION / {stationId}</p>
@@ -129,6 +130,19 @@ export function StationDetailPage({ stationId }: { stationId: string }) {
     <div className="vs-page">
       <p className="vs-page__code">STATION / {station.code}</p>
       <h1 className="vs-page__title">{station.name}</h1>
+
+      {stateQuery.isError ? (
+        <div className="vs-wall__error" role="alert">
+          <p>刷新失败，显示上次快照。</p>
+          <button
+            className="vs-chip vs-focus"
+            onClick={() => void stateQuery.refetch()}
+            type="button"
+          >
+            重试
+          </button>
+        </div>
+      ) : null}
 
       <header className="vs-detail-head">
         <span className="vs-detail-head__fact">区域 {station.zone ?? "—"}</span>
@@ -160,6 +174,11 @@ export function StationDetailPage({ stationId }: { stationId: string }) {
           </button>
         ) : null}
         <div className="vs-detail-head__actions">
+          {sopsQuery.isError ? (
+            <span className="vs-row__meta">
+              SOP 列表加载失败，暂时无法开始执行
+            </span>
+          ) : null}
           {published.length > 0 ? (
             <select
               aria-label="发布版本"
@@ -190,9 +209,11 @@ export function StationDetailPage({ stationId }: { stationId: string }) {
         <PreviewPanel
           alt={`${station.code} ${station.name} 画面`}
           health={camera?.health ?? "UNAVAILABLE"}
+          key={`${state.preview_url ?? ""}|${camera?.health ?? ""}`}
           lastFrameAt={state.last_frame_at}
           previewUrl={state.preview_url}
           snapshotUrl={state.snapshot_url}
+          stale={isStale(state.last_frame_at, state.server_time)}
         />
         <div className="vs-panel">
           <h2 className="vs-panel__title">当前执行</h2>
@@ -205,7 +226,25 @@ export function StationDetailPage({ stationId }: { stationId: string }) {
         </div>
       </div>
 
-      <ExecutionFacts execution={executionQuery.data ?? null} system={state} />
+      {execution && executionQuery.isPending ? (
+        <div className="vs-skeleton-card" />
+      ) : execution && executionQuery.isError ? (
+        <div className="vs-panel" role="alert">
+          <p>执行详情加载失败，工位快照仍然有效。</p>
+          <button
+            className="vs-chip vs-focus"
+            onClick={() => void executionQuery.refetch()}
+            type="button"
+          >
+            重试
+          </button>
+        </div>
+      ) : (
+        <ExecutionFacts
+          execution={executionQuery.data ?? null}
+          system={state}
+        />
+      )}
     </div>
   )
 }

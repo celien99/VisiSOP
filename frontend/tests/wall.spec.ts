@@ -122,3 +122,55 @@ test("card links to the station", async ({ page }) => {
   await page.getByTestId("wall-card").first().click()
   await expect(page).toHaveURL(/\/stations\/st-01$/)
 })
+
+test("an offline camera is a distinct state, not an error", async ({
+  page,
+}) => {
+  await page.route("**/api/stations/runtime-state", (route) =>
+    route.fulfill({
+      json: [
+        state({
+          camera: {
+            ...state({}).camera,
+            health: "UNAVAILABLE",
+            last_frame_at: null,
+          },
+          process_status: "OFFLINE",
+          health: "UNAVAILABLE",
+          last_frame_at: null,
+        }),
+      ],
+    }),
+  )
+  await page.goto("/")
+  const card = page.getByTestId("wall-card").first()
+  await expect(card).toContainText("离线")
+  await expect(card).toContainText("无信号")
+  await expect(card).toContainText("从取料区取起瓶体")
+})
+
+test("a healthy camera with an old frame is not labelled live", async ({
+  page,
+}) => {
+  const png = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+    "base64",
+  )
+  await page.route("http://127.0.0.1:8001/**", (route) =>
+    route.fulfill({ body: png, contentType: "image/png" }),
+  )
+  await page.route("**/api/stations/runtime-state", (route) =>
+    route.fulfill({
+      json: [
+        state({
+          last_frame_at: "2026-01-01T11:59:45Z",
+          server_time: "2026-01-01T12:00:02Z",
+        }),
+      ],
+    }),
+  )
+  await page.goto("/")
+  const card = page.getByTestId("wall-card").first()
+  await expect(card).toContainText("最后一帧")
+  await expect(card).not.toContainText("实时预览")
+})

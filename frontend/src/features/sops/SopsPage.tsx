@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { isAxiosError } from "axios"
 import { useState } from "react"
 import { toast } from "sonner"
+import type { SopVersionRead } from "@/client"
 import { SopsService } from "@/client"
 import { StatusChip } from "@/components/Common/StatusChip"
 import {
@@ -30,7 +31,8 @@ export function SopsPage() {
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(
     null,
   )
-  const [publishedIds, setPublishedIds] = useState<string[]>([])
+  const [confirmedVersion, setConfirmedVersion] =
+    useState<SopVersionRead | null>(null)
   const [creating, setCreating] = useState(false)
   const [newKey, setNewKey] = useState("")
   const [newName, setNewName] = useState("")
@@ -65,7 +67,9 @@ export function SopsPage() {
   const version =
     versions.find((item) => item.id === selectedVersionId) ?? versions[0]
   const effectiveStatus =
-    version && publishedIds.includes(version.id) ? "PUBLISHED" : version?.status
+    version && confirmedVersion?.id === version.id
+      ? confirmedVersion.status
+      : version?.status
 
   const create = useMutation({
     mutationFn: async (dsl: Record<string, unknown>) =>
@@ -207,9 +211,7 @@ export function SopsPage() {
                 effectiveStatus === "DRAFT" ? (
                   <SopDraftEditor
                     key={version.id}
-                    onPublished={(versionId) =>
-                      setPublishedIds((current) => [...current, versionId])
-                    }
+                    onPublished={setConfirmedVersion}
                     sopId={detail.id}
                     version={version}
                   />

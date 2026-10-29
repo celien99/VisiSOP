@@ -36,6 +36,24 @@ const runtimeState = (over: Record<string, unknown>) => ({
   ...over,
 })
 
+const startedExecution = {
+  id: "e9",
+  station_id: "st-01",
+  sop_key: "bottle_transfer",
+  sop_version: 1,
+  sop_content_hash: "abc123",
+  status: "RUNNING",
+  workpiece_id: null,
+  started_at: T,
+  finished_at: null,
+  paused_at: null,
+  total_paused_ms: 0,
+  accept_events_until: "2026-01-01T12:10:00Z",
+  steps: [],
+  allowed_actions: ["ABORT"],
+  server_time: "2026-01-01T12:00:02Z",
+}
+
 const sops = [
   {
     id: "sop-1",
@@ -70,7 +88,10 @@ test("starts an execution with the chosen published SOP version", async ({
     route.fulfill({ json: runtimeState({}) }),
   )
   await page.route("**/api/stations/st-01/executions", (route) =>
-    route.fulfill({ status: 201, json: { id: "e9" } }),
+    route.fulfill({ status: 201, json: startedExecution }),
+  )
+  await page.route("**/api/executions/e9", (route) =>
+    route.fulfill({ json: startedExecution }),
   )
 
   await page.goto("/stations/st-01")
@@ -85,6 +106,9 @@ test("starts an execution with the chosen published SOP version", async ({
   const request = await requestPromise
   expect(request.postDataJSON()).toEqual({ sop_version_id: "sopv-demo-1" })
   await expect(page).toHaveURL(/\/executions\/e9$/)
+  await expect(page.getByTestId("fact-process")).toContainText(
+    "SOP-bottle_transfer",
+  )
 })
 
 test("offline camera keeps the four facts visible", async ({ page }) => {

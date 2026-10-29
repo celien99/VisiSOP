@@ -129,6 +129,7 @@ export function RecordsPage({ search, onSearchChange }: RecordsPageProps) {
             className="vs-input vs-input--compact"
             defaultValue={search.station_id ?? ""}
             id="record-station"
+            key={search.station_id ?? ""}
             onKeyDown={(event) => {
               if (event.key !== "Enter") return
               onSearchChange({
@@ -160,7 +161,7 @@ export function RecordsPage({ search, onSearchChange }: RecordsPageProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead>开始时间</TableHead>
-                  <TableHead>工位</TableHead>
+                  <TableHead>执行 ID</TableHead>
                   <TableHead>SOP</TableHead>
                   <TableHead>状态</TableHead>
                   <TableHead>当前步骤</TableHead>

@@ -892,3 +892,17 @@
     gap: var(--vs-space-3);
   }
 }
+
+@layer components {
+  .vs-wall__error {
+    display: flex;
+    align-items: center;
+    gap: var(--vs-space-3);
+    margin: var(--vs-wall-gap) var(--vs-wall-gap) 0;
+    padding: var(--vs-space-2) var(--vs-space-3);
+    border: var(--vs-hairline) solid var(--vs-warn);
+    background: var(--vs-surface);
+    color: var(--vs-warn-ink);
+    font-size: var(--vs-text-meta);
+  }
+}
