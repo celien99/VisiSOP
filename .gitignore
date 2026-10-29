@@ -8,3 +8,5 @@ backend/app/frontend/
 /playwright/.cache/
 .playwright-mcp/
 .taste-skill/
+.claude-flow/
+.swarm/
