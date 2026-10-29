@@ -1,15 +1,18 @@
 import json
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
+from contracts.events import ModelRef, VisionEvent
 from fastapi.testclient import TestClient
+from PIL import Image
 from sqlalchemy.engine import Connection
 from sqlmodel import Session
 
 from app.api.deps import get_db
 from app.api.schemas.execution import ExecutionDetailRead
+from app.application import execution_service
 from app.application.runtime_registry import runtime_registry
 from app.application.sop_service import create_sop, publish_sop
 from app.core.config import settings
@@ -120,11 +123,69 @@ def published_sop(db_session: Session, now: datetime) -> SOPVersion:
 
 @pytest.fixture
 def active_execution(
-    client: TestClient, published_sop: SOPVersion, seeded_station: Station
+    db_session: Session,
+    published_sop: SOPVersion,
+    seeded_station: Station,
+    now: datetime,
 ) -> ExecutionDetailRead:
-    response = client.post(
-        "/api/stations/st-01/executions",
-        json={"sop_version_id": published_sop.id},
+    # Created at the fixture clock so ingestion tests can post events deterministically.
+    detail = execution_service.create_execution(
+        db_session,
+        station_id="st-01",
+        sop_version_id=published_sop.id,
+        workpiece_id=None,
+        now=now,
     )
-    assert response.status_code == 201, response.text
-    return ExecutionDetailRead.model_validate(response.json())
+    db_session.commit()
+    return detail
+
+
+@pytest.fixture
+def make_zone_event(evidence_dir: Path) -> Callable[..., VisionEvent]:
+    counter = {"seq": 0}
+
+    def factory(
+        event_id: str, zone: str, at: datetime, *, evidence: bool = True
+    ) -> VisionEvent:
+        counter["seq"] += 1
+        refs: tuple[str, ...] = ()
+        if evidence:
+            (evidence_dir / "tmp").mkdir(exist_ok=True)
+            Image.new("RGB", (16, 12), "black").save(
+                evidence_dir / "tmp" / f"{event_id}.jpg", "JPEG"
+            )
+            refs = (f"tmp/{event_id}.jpg",)
+        return VisionEvent(
+            schema_version="1.0",
+            event_id=event_id,
+            event_type=f"bottle_in_{zone}_zone",
+            station_id="st-01",
+            camera_id="cam-01",
+            camera_role="overview",
+            occurred_at=at,
+            emitted_at=at,
+            frame_seq=counter["seq"],
+            confidence=0.9,
+            model=ModelRef(name="demo", version="1"),
+            attributes={
+                "object_class": "bottle",
+                "zone": zone,
+                "bbox": [0.1, 0.1, 0.2, 0.2],
+            },
+            evidence_refs=refs,
+            correlation_key=f"st-01:{zone}:bottle",
+        )
+
+    return factory
+
+
+@pytest.fixture
+def event_with_evidence(make_zone_event: Callable[..., VisionEvent], now: datetime) -> VisionEvent:
+    return make_zone_event("evt-1", "pickup", now)
+
+
+@pytest.fixture
+def event_payload(event_with_evidence: VisionEvent) -> dict[str, object]:
+    payload = event_with_evidence.model_dump(mode="json")
+    payload["evidence_refs"] = []
+    return payload

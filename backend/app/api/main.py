@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     cameras,
+    events,
     evidence,
     executions,
     runtimes,
@@ -18,3 +19,4 @@ api_router.include_router(cameras.router)
 api_router.include_router(runtimes.router)
 api_router.include_router(executions.router)
 api_router.include_router(evidence.router)
+api_router.include_router(events.router)
