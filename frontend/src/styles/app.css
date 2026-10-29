@@ -745,3 +745,101 @@
     }
   }
 }
+
+@layer components {
+  /* ---- SOP authoring ---- */
+  .vs-sops {
+    display: grid;
+    grid-template-columns: minmax(0, 16rem) minmax(0, 1fr);
+    gap: var(--vs-panel-gap);
+    margin-top: var(--vs-space-5);
+  }
+  .vs-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--vs-space-2);
+    align-items: stretch;
+  }
+  .vs-list__item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--vs-space-2) var(--vs-space-3);
+    border: var(--vs-hairline) solid var(--vs-line);
+    background: var(--vs-surface);
+    color: var(--vs-ink);
+    text-align: left;
+  }
+  .vs-list__item[aria-current="true"] {
+    border-color: var(--vs-ink);
+  }
+  .vs-sop-detail {
+    display: flex;
+    flex-direction: column;
+    gap: var(--vs-panel-gap);
+    min-width: 0;
+  }
+  .vs-sop-detail .vs-detail-head {
+    margin-top: 0;
+  }
+  .vs-textarea {
+    min-height: 18rem;
+    padding: var(--vs-space-2);
+    border: var(--vs-hairline) solid var(--vs-line-strong);
+    border-radius: 0;
+    background: var(--vs-surface-2);
+    color: var(--vs-ink);
+    font-family: var(--vs-font-sans);
+    font-size: var(--vs-text-meta);
+    line-height: var(--vs-leading-normal);
+    resize: vertical;
+  }
+  .vs-textarea:focus-visible {
+    outline: none;
+    box-shadow: var(--vs-focus-ring);
+  }
+  .vs-dag {
+    display: flex;
+    flex-direction: column;
+    margin-top: var(--vs-space-3);
+  }
+  .vs-dag__item {
+    display: grid;
+    grid-template-columns: 10rem 1fr;
+    gap: var(--vs-space-3);
+    padding: var(--vs-space-2) 0;
+    border-bottom: var(--vs-hairline) solid var(--vs-line);
+  }
+  .vs-dag__key {
+    color: var(--vs-ink-secondary);
+    font-size: var(--vs-text-micro);
+    font-weight: var(--vs-weight-bold);
+    letter-spacing: var(--vs-tracking-label);
+  }
+  .vs-dag__body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .vs-issues {
+    margin-top: var(--vs-space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--vs-space-1);
+  }
+  .vs-issue {
+    color: var(--vs-crit-ink);
+    font-size: var(--vs-text-meta);
+  }
+  .vs-ok-text {
+    margin-top: var(--vs-space-3);
+    color: var(--vs-ok-ink);
+    font-size: var(--vs-text-meta);
+    font-weight: var(--vs-weight-semibold);
+  }
+  @media (max-width: 64rem) {
+    .vs-sops {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}
