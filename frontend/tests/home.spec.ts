@@ -1,11 +1,19 @@
 import { expect, test } from "@playwright/test"
 
-test("renders the monitoring wall without demo data", async ({ page }) => {
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/stations/runtime-state", (route) =>
+    route.fulfill({ json: [] }),
+  )
+})
+
+test("the wall explains why it is empty instead of showing fake data", async ({
+  page,
+}) => {
   await page.goto("/")
   await expect(
     page.getByRole("heading", { name: "多机位监控墙" }),
   ).toBeVisible()
-  await expect(page.getByText("Phase 1 不提供演示数据")).toBeVisible()
+  await expect(page.getByText("暂无已配置工位")).toBeVisible()
   await expect(page.getByRole("navigation", { name: "主导航" })).toBeVisible()
 })
 

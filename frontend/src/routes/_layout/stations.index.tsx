@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { PendingPage } from "@/components/Common/PendingPage"
 
-export const Route = createFileRoute("/_layout/stations")({
+export const Route = createFileRoute("/_layout/stations/")({
   component: StationsRoute,
   head: () => ({ meta: [{ title: "工位 · VisiSOP" }] }),
 })

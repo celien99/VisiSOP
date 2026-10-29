@@ -14,8 +14,9 @@ import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutAnalyticsRouteImport } from './routes/_layout/analytics'
 import { Route as LayoutRecordsRouteImport } from './routes/_layout/records'
 import { Route as LayoutSopsRouteImport } from './routes/_layout/sops'
-import { Route as LayoutStationsRouteImport } from './routes/_layout/stations'
 import { Route as LayoutSystemRouteImport } from './routes/_layout/system'
+import { Route as LayoutStationsIndexRouteImport } from './routes/_layout/stations.index'
+import { Route as LayoutStationsStationIdRouteImport } from './routes/_layout/stations.$stationId'
 
 const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
@@ -41,14 +42,19 @@ const LayoutSopsRoute = LayoutSopsRouteImport.update({
   path: '/sops',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutStationsRoute = LayoutStationsRouteImport.update({
-  id: '/stations',
-  path: '/stations',
-  getParentRoute: () => LayoutRoute,
-} as any)
 const LayoutSystemRoute = LayoutSystemRouteImport.update({
   id: '/system',
   path: '/system',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutStationsIndexRoute = LayoutStationsIndexRouteImport.update({
+  id: '/stations/',
+  path: '/stations/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutStationsStationIdRoute = LayoutStationsStationIdRouteImport.update({
+  id: '/stations/$stationId',
+  path: '/stations/$stationId',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -57,16 +63,18 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof LayoutAnalyticsRoute
   '/records': typeof LayoutRecordsRoute
   '/sops': typeof LayoutSopsRoute
-  '/stations': typeof LayoutStationsRoute
   '/system': typeof LayoutSystemRoute
+  '/stations/$stationId': typeof LayoutStationsStationIdRoute
+  '/stations/': typeof LayoutStationsIndexRoute
 }
 export interface FileRoutesByTo {
   '/analytics': typeof LayoutAnalyticsRoute
   '/records': typeof LayoutRecordsRoute
   '/sops': typeof LayoutSopsRoute
-  '/stations': typeof LayoutStationsRoute
   '/system': typeof LayoutSystemRoute
   '/': typeof LayoutIndexRoute
+  '/stations/$stationId': typeof LayoutStationsStationIdRoute
+  '/stations': typeof LayoutStationsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -74,24 +82,40 @@ export interface FileRoutesById {
   '/_layout/analytics': typeof LayoutAnalyticsRoute
   '/_layout/records': typeof LayoutRecordsRoute
   '/_layout/sops': typeof LayoutSopsRoute
-  '/_layout/stations': typeof LayoutStationsRoute
   '/_layout/system': typeof LayoutSystemRoute
   '/_layout/': typeof LayoutIndexRoute
+  '/_layout/stations/$stationId': typeof LayoutStationsStationIdRoute
+  '/_layout/stations/': typeof LayoutStationsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/analytics' | '/records' | '/sops' | '/stations' | '/system'
+  fullPaths:
+    | '/'
+    | '/analytics'
+    | '/records'
+    | '/sops'
+    | '/system'
+    | '/stations/$stationId'
+    | '/stations/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/analytics' | '/records' | '/sops' | '/stations' | '/system' | '/'
+  to:
+    | '/analytics'
+    | '/records'
+    | '/sops'
+    | '/system'
+    | '/'
+    | '/stations/$stationId'
+    | '/stations'
   id:
     | '__root__'
     | '/_layout'
     | '/_layout/analytics'
     | '/_layout/records'
     | '/_layout/sops'
-    | '/_layout/stations'
     | '/_layout/system'
     | '/_layout/'
+    | '/_layout/stations/$stationId'
+    | '/_layout/stations/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -135,18 +159,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSopsRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/stations': {
-      id: '/_layout/stations'
-      path: '/stations'
-      fullPath: '/stations'
-      preLoaderRoute: typeof LayoutStationsRouteImport
-      parentRoute: typeof LayoutRoute
-    }
     '/_layout/system': {
       id: '/_layout/system'
       path: '/system'
       fullPath: '/system'
       preLoaderRoute: typeof LayoutSystemRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/stations/': {
+      id: '/_layout/stations/'
+      path: '/stations'
+      fullPath: '/stations/'
+      preLoaderRoute: typeof LayoutStationsIndexRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/stations/$stationId': {
+      id: '/_layout/stations/$stationId'
+      path: '/stations/$stationId'
+      fullPath: '/stations/$stationId'
+      preLoaderRoute: typeof LayoutStationsStationIdRouteImport
       parentRoute: typeof LayoutRoute
     }
   }
@@ -156,18 +187,20 @@ interface LayoutRouteChildren {
   LayoutAnalyticsRoute: typeof LayoutAnalyticsRoute
   LayoutRecordsRoute: typeof LayoutRecordsRoute
   LayoutSopsRoute: typeof LayoutSopsRoute
-  LayoutStationsRoute: typeof LayoutStationsRoute
   LayoutSystemRoute: typeof LayoutSystemRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
+  LayoutStationsStationIdRoute: typeof LayoutStationsStationIdRoute
+  LayoutStationsIndexRoute: typeof LayoutStationsIndexRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAnalyticsRoute: LayoutAnalyticsRoute,
   LayoutRecordsRoute: LayoutRecordsRoute,
   LayoutSopsRoute: LayoutSopsRoute,
-  LayoutStationsRoute: LayoutStationsRoute,
   LayoutSystemRoute: LayoutSystemRoute,
   LayoutIndexRoute: LayoutIndexRoute,
+  LayoutStationsStationIdRoute: LayoutStationsStationIdRoute,
+  LayoutStationsIndexRoute: LayoutStationsIndexRoute,
 }
 
 const LayoutRouteWithChildren =
