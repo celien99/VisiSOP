@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
+import contracts.demo  # noqa: F401  (registers the demo event catalog)
 from contracts.enums import CameraRole
 from sqlmodel import Session, col, select
 
