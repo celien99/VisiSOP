@@ -36,3 +36,29 @@ class MessageType(StrEnum):
     EXECUTION_UPDATED = "execution.updated"
     STEP_UPDATED = "step.updated"
     RUNTIME_HEALTH = "runtime.health"
+
+
+class ReviewDecision(StrEnum):
+    MARK_COMPLETED = "MARK_COMPLETED"
+    MARK_FAILED = "MARK_FAILED"
+
+
+class AlarmCategory(StrEnum):
+    PROCESS_COMPLIANCE = "PROCESS_COMPLIANCE"
+    VISION_QUALITY = "VISION_QUALITY"
+    DEVICE_HEALTH = "DEVICE_HEALTH"
+    DATA_INTEGRITY = "DATA_INTEGRITY"
+    SYSTEM = "SYSTEM"
+
+
+class AlarmSeverity(StrEnum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
+
+
+class AlarmStatus(StrEnum):
+    OPEN = "OPEN"
+    ACKNOWLEDGED = "ACKNOWLEDGED"
+    RESOLVED = "RESOLVED"

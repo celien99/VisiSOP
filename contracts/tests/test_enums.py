@@ -1,4 +1,13 @@
-from contracts.enums import CameraRole, MessageType, ProcessingResult, ReasonCode
+from contracts.enums import (
+    AlarmCategory,
+    AlarmSeverity,
+    AlarmStatus,
+    CameraRole,
+    MessageType,
+    ProcessingResult,
+    ReasonCode,
+    ReviewDecision,
+)
 from contracts.version import SCHEMA_VERSION, SUPPORTED_SCHEMA_VERSIONS
 
 
@@ -36,3 +45,13 @@ def test_reason_codes_cover_baseline_and_auto_skip() -> None:
 def test_camera_roles_and_message_types() -> None:
     assert CameraRole.OVERVIEW == "overview"
     assert MessageType.ALARM_CREATED == "alarm.created"
+
+
+def test_review_decisions_are_closed() -> None:
+    assert {d.value for d in ReviewDecision} == {"MARK_COMPLETED", "MARK_FAILED"}
+
+
+def test_alarm_vocabulary() -> None:
+    assert AlarmCategory.DATA_INTEGRITY == "DATA_INTEGRITY"
+    assert AlarmSeverity.HIGH == "HIGH"
+    assert AlarmStatus.ACKNOWLEDGED == "ACKNOWLEDGED"

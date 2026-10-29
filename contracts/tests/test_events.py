@@ -52,10 +52,16 @@ def test_routed_event_requires_execution_id() -> None:
         RoutedSOPEvent(**make_event().model_dump())
 
 
+def _routed_payload(**overrides: Any) -> dict[str, Any]:
+    payload = make_event().model_dump()
+    payload.pop("execution_id")
+    return {**payload, **overrides}
+
+
 def test_routed_event_requires_resolver_rule_version() -> None:
     with pytest.raises(ValidationError):
         RoutedSOPEvent(
-            **make_event().model_dump(),
+            **_routed_payload(),
             execution_id="exec-1",
             resolution_method="ACTIVE_EXECUTION_WINDOW",
             resolved_at=T,
@@ -65,7 +71,7 @@ def test_routed_event_requires_resolver_rule_version() -> None:
 
 def test_routed_event_carries_resolution_metadata() -> None:
     routed = RoutedSOPEvent(
-        **make_event().model_dump(),
+        **_routed_payload(),
         execution_id="exec-1",
         resolution_method="ACTIVE_EXECUTION_WINDOW",
         resolved_at=T,
@@ -96,3 +102,18 @@ def test_optional_fields_are_backward_compatible() -> None:
     payload.pop("camera_role")
     payload.pop("correlation_key")
     assert VisionEvent.model_validate(payload).camera_role is None
+
+
+def test_vision_event_accepts_optional_execution_hint() -> None:
+    assert make_event().execution_id is None
+    assert make_event(execution_id="exec-1").execution_id == "exec-1"
+
+
+def test_routed_event_still_requires_execution_id() -> None:
+    with pytest.raises(ValidationError):
+        RoutedSOPEvent(
+            **make_event().model_dump(),
+            resolution_method="ACTIVE_EXECUTION_WINDOW",
+            resolved_at=T,
+            resolver_rule_version="1",
+        )

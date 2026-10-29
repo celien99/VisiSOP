@@ -54,9 +54,11 @@ class VisionEvent(_VersionedModel):
     evidence_refs: tuple[str, ...] = ()
     attributes: dict[str, Any] = Field(default_factory=dict)
     correlation_key: str | None = None
+    execution_id: str | None = None
 
 
 class RoutedSOPEvent(VisionEvent):
+    # Re-declared without a default: the resolver always knows the execution.
     execution_id: str
     resolution_method: str
     resolved_at: AwareDatetime
