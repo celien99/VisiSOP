@@ -9,7 +9,7 @@ import contracts.demo  # noqa: F401  (registers the demo event catalog)
 from contracts.enums import CameraRole
 from sqlmodel import Session, col, select
 
-from app.application.execution_service import create_execution
+from app.application.execution_service import abort_execution, create_execution
 from app.application.sop_service import create_sop, publish_sop
 from app.core.db import engine
 from app.domain.sop.model import ExecutionStatus
@@ -131,6 +131,16 @@ def seed_demo(session: Session, now: datetime) -> SeedResult:
             col(SOPExecution.status).in_(_ACTIVE),
         )
     ).first()
+    if active is not None and active.accept_events_until < now:
+        # Its late-grace deadline has passed: every new event would be
+        # QUARANTINED/LATE_EVENT, so reuse would leave the demo dead.
+        abort_execution(
+            session,
+            execution_id=active.id,
+            reason="demo seed replaced an execution past its accept window",
+            now=now,
+        )
+        active = None
     created_execution = active is None
     if active is None:
         detail = create_execution(
