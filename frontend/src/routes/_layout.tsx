@@ -1,5 +1,8 @@
+import { useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
+import { ConnectionIndicator } from "@/components/Common/ConnectionIndicator"
+import { useExecutionSocket } from "@/hooks/useExecutionSocket"
 
 export const Route = createFileRoute("/_layout")({
   component: Layout,
@@ -29,6 +32,24 @@ function useClock() {
 
 function Layout() {
   const clock = useClock()
+  const queryClient = useQueryClient()
+  const { status, lastMessageAt } = useExecutionSocket(() => {
+    // Any pushed change means some snapshot moved; refetch the live views.
+    for (const key of [
+      "station-runtime-states",
+      "station-runtime-state",
+      "execution",
+      "execution-timeline",
+      "alarms",
+    ]) {
+      void queryClient.invalidateQueries({ queryKey: [key] })
+    }
+  })
+
+  // A (re)connected socket may have missed messages while offline.
+  useEffect(() => {
+    if (status === "OPEN") void queryClient.invalidateQueries()
+  }, [status, queryClient])
 
   return (
     <div className="flex min-h-dvh flex-col bg-casing text-ink">
@@ -60,10 +81,10 @@ function Layout() {
             ))}
           </nav>
           <div className="vs-topbar__right">
-            <span className="vs-conn">
-              <span aria-hidden="true" className="vs-conn__dot" />
-              未连接
-            </span>
+            <ConnectionIndicator
+              lastMessageAt={lastMessageAt}
+              status={status}
+            />
             <span className="vs-clock">{clock}</span>
             <Link className="vs-utility vs-focus" to="/system">
               系统
@@ -75,8 +96,8 @@ function Layout() {
         <Outlet />
       </main>
       <footer className="vs-statusbar">
-        <span>Phase 1 · 接口尚未接入，页面不展示推定结果</span>
-        <span>VisiSOP</span>
+        <span>推送只提示刷新 · 数据以 REST 快照为准</span>
+        <span>VisiSOP · {import.meta.env.MODE}</span>
       </footer>
     </div>
   )
