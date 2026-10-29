@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "sop_key": "bottle_transfer",
+  "version": 1,
+  "name": "瓶体转移演示",
+  "steps": [
+    {
+      "key": "pick_bottle",
+      "name": "从取料区取起瓶体",
+      "type": "ACTION",
+      "timeout_ms": 60000,
+      "completion": {"mode": "EVENT_RULE", "all": [
+        {"event_type": "bottle_in_pickup_zone", "min_confidence": 0.4, "stable_for_ms": 500}
+      ]},
+      "evidence": {"required": true, "kind": "keyframe"}
+    },
+    {
+      "key": "place_bottle",
+      "name": "将瓶体放入目标区",
+      "type": "ACTION",
+      "depends_on": ["pick_bottle"],
+      "timeout_ms": 60000,
+      "completion": {"mode": "EVENT_RULE", "all": [
+        {"event_type": "bottle_in_target_zone", "min_confidence": 0.4, "stable_for_ms": 500}
+      ]},
+      "evidence": {"required": true, "kind": "keyframe"}
+    },
+    {
+      "key": "verify_placement",
+      "name": "确认放置完成",
+      "type": "CHECKPOINT",
+      "depends_on": ["place_bottle"],
+      "timeout_ms": 5000,
+      "completion": {"mode": "STATE_RULE", "all_steps_completed": ["place_bottle"]}
+    }
+  ]
+}
