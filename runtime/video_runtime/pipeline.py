@@ -54,27 +54,36 @@ class Pipeline:
         inference_ms = (self._clock() - started) * 1000
         hits = self._zones.map(detections, frame)
         events = self._builder.build(frame, hits, now)
-        for event in events:
-            self._publisher.publish(event)
+        # Preview and health update before publishing: a slow or down backend
+        # must never freeze the live picture or report a stale camera.
         self._state.set_frame(frame)
         self._state.status = HealthStatus.HEALTHY
         self._state.metrics["inference_ms"] = inference_ms
         self._state.metrics["fps"] = self._fps(frame.captured_at)
         self._state.metrics["dropped_frames"] = float(self._buffer.dropped)
         self._last_captured_at = frame.captured_at
+        for event in events:
+            self._publisher.publish(event)
         return events
 
     def run(self) -> None:
         self._source.start()
         reader = threading.Thread(target=self._read_frames, daemon=True)
         reader.start()
+        next_sample = self._clock()
         try:
             while not self._stop.is_set():
                 frame = self._buffer.get(timeout=self._interval_s)
                 if frame is None:
+                    next_sample = self._clock()
                     continue
                 self.process_frame(frame, datetime.now(UTC))
                 self._publisher.flush()
+                next_sample += self._interval_s
+                now = self._clock()
+                if next_sample < now:
+                    next_sample = now  # a slow frame must not queue catch-up bursts
+                self._stop.wait(next_sample - now)
         finally:
             self._source.stop()
             reader.join(timeout=1.0)

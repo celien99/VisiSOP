@@ -77,7 +77,7 @@ uv run python -m app.scripts.seed_demo
 
 It prints the station (`st-01`), camera (`cam-01`), published SOP version and
 the active execution ID. It is idempotent; re-running never deletes data.
-Copy the execution ID for step 9.
+Copy the execution ID for step 11.
 
 ## 7. Camera check (before the runtime)
 
@@ -89,7 +89,7 @@ thresholds until the spike shows ≥ 10 FPS and a usable image.
 The ONNX model is not committed. In `runtime/`:
 
 ```bash
-uv run --with ultralytics yolo export model=yolo11n.pt format=onnx opset=17 imgsz=640 simplify=False
+uv run --with "ultralytics[export]" yolo export model=yolo11n.pt format=onnx opset=17 imgsz=640 simplify=False
 ```
 
 Copy the file to `runtime/models/yolo11n.onnx`. Class names are already in
@@ -138,7 +138,7 @@ Record the outcomes in `docs/runbooks/acceptance-b1.md` as you go.
 ## 12. Restart and recovery
 
 - Backend restart: the wall restores from REST; the runtime notices the lost
-  heartbeat (404) and re-registers within 5 s; queued events retry.
+  heartbeat (404) and re-registers on the next tick (≤ ~10 s); queued events retry.
 - Runtime restart: the wall shows `无信号` within ~15 s (`RUNTIME_STALE_AFTER_MS`).
 - Camera unplug: the runtime reports `UNAVAILABLE`, the wall keeps showing the
   process facts, and the preview falls back to the last frame or `预览不可用`.

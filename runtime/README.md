@@ -17,7 +17,7 @@ EVIDENCE_DIR=/path/to/evidence uv run python -m video_runtime.main --config conf
 - The preview server binds `127.0.0.1:8001` (`/stream/{camera_id}`,
   `/snapshot/{camera_id}`, `/health`).
 - The YOLO model is not committed. Export it once:
-  `yolo export model=yolo11n.pt format=onnx opset=17 imgsz=640 simplify=False`
+  `uv run --with "ultralytics[export]" yolo export model=yolo11n.pt format=onnx opset=17 imgsz=640 simplify=False`
   (no NMS baked in; the runtime decodes and applies NMS) and place it at
   `runtime/models/yolo11n.onnx`. Class names live in `models/coco.names`.
 

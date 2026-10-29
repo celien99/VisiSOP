@@ -30,6 +30,8 @@ def create_app(state: RuntimeState) -> FastAPI:
 
     @app.get("/stream/{camera_id}")
     def stream(camera_id: str, max_chunks: int | None = None) -> StreamingResponse:
+        if state.jpeg(camera_id) is None:
+            raise HTTPException(status_code=404, detail="no frame for camera")
         return StreamingResponse(
             mjpeg_chunks(
                 state, camera_id, fps=state.preview_fps, max_chunks=max_chunks

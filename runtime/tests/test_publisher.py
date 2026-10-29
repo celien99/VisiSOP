@@ -96,3 +96,36 @@ def test_flush_drains_pending_in_order() -> None:
     assert publisher.flush() == 2
     assert not publisher.pending
     assert [json.loads(body)["event_id"] for body in received] == ["evt-a", "evt-b"]
+
+
+def test_429_is_retried_not_dropped() -> None:
+    calls: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        if len(calls) == 1:
+            return httpx.Response(429)
+        return httpx.Response(202, json={"result": "ACCEPTED"})
+
+    publisher = HttpEventPublisher(
+        BASE_URL, transport=httpx.MockTransport(handler), backoff_ms=(0,)
+    )
+    outcome = publisher.publish(make_event())
+    assert outcome.delivered is True
+    assert len(calls) == 2
+
+
+def test_permanent_rejection_records_and_logs_the_error(caplog) -> None:
+    publisher = HttpEventPublisher(
+        BASE_URL,
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(422, json={"detail": "bad event"})
+        ),
+        backoff_ms=(0,),
+    )
+    with caplog.at_level("WARNING"):
+        outcome = publisher.publish(make_event())
+    assert outcome.delivered is False
+    assert publisher.metrics.last_error is not None
+    assert "422" in publisher.metrics.last_error
+    assert any("422" in record.getMessage() for record in caplog.records)

@@ -14,7 +14,7 @@ try:
 
     HARVESTERS_AVAILABLE = True
 except ImportError:  # the gige extra is optional; file replay must still work
-    Harvester = None  # type: ignore[assignment,misc]
+    Harvester = None
     HARVESTERS_AVAILABLE = False
 
 
@@ -31,11 +31,17 @@ def bayer_to_bgr(data: Any, pixel_format: str) -> Any:
 class GigEHKSource:
     """Hikvision GigE Vision source through the MVS GenTL producer."""
 
-    def __init__(self, config: GigESourceConfig, *, camera_id: str) -> None:
+    def __init__(
+        self,
+        config: GigESourceConfig,
+        *,
+        camera_id: str,
+        acquirer: Any = None,
+    ) -> None:
         self._config = config
         self._camera_id = camera_id
         self._harvester: Any = None
-        self._acquirer: Any = None
+        self._acquirer: Any = acquirer
         self._frame_seq = 0
         self._last_frame_at: datetime | None = None
         self._error: str | None = None
@@ -62,7 +68,8 @@ class GigEHKSource:
         if self._acquirer is None:
             return None
         try:
-            buffer = self._acquirer.fetch(timeout=self._config.timeout_ms)
+            # harvesters' fetch timeout is in seconds; the config is in ms
+            buffer = self._acquirer.fetch(timeout=self._config.timeout_ms / 1000)
         except Exception as exc:  # hardware boundary: timeout/unplug/stream errors
             self._error = str(exc)
             return None
@@ -72,7 +79,12 @@ class GigEHKSource:
 
         try:
             component = buffer.payload.components[0]
-            data = np.array(component.data).reshape(component.height, component.width)
+            channels = component.num_components_per_pixel
+            data = np.array(component.data).reshape(
+                component.height, component.width, channels
+            )
+            if channels == 1:
+                data = data[:, :, 0]
             image = bayer_to_bgr(data, self._config.pixel_format)
         finally:
             buffer.queue()
@@ -122,16 +134,28 @@ class GigEHKSource:
         if self._config.serial:
             return harvester.create_image_acquirer(serial_number=self._config.serial)
         if self._config.ip:
-            return harvester.create_image_acquirer(ip_address=self._config.ip)
+            raise ValueError(
+                "camera selection by IP is unsupported by the GenTL producer; "
+                f"set serial instead of ip={self._config.ip}"
+            )
         return harvester.create_image_acquirer()
 
     def _configure(self, node_map: Any) -> None:
         config = self._config
-        node_map.Width.value = config.width
-        node_map.Height.value = config.height
+        # offsets first: many producers reject them once the full ROI is set
         node_map.OffsetX.value = config.offset_x
         node_map.OffsetY.value = config.offset_y
+        node_map.Width.value = config.width
+        node_map.Height.value = config.height
         node_map.PixelFormat.value = config.pixel_format
+        _disable_auto(node_map, "ExposureAuto")
         node_map.ExposureTime.value = config.exposure_us
+        _disable_auto(node_map, "GainAuto")
         node_map.Gain.value = config.gain_db
         node_map.GevSCPSPacketSize.value = config.packet_size
+
+
+def _disable_auto(node_map: Any, node_name: str) -> None:
+    node = getattr(node_map, node_name, None)
+    if node is not None:
+        node.value = "Off"

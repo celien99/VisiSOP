@@ -51,14 +51,14 @@ class EventBuilder:
             ):
                 continue
 
-            event_id = str(event_id_factory())
-            evidence_ref = self._writer.write(event_id, frame, hit)
             attributes = {
                 "object_class": hit.detection.class_name,
                 "zone": hit.zone.name,
                 "bbox": hit.detection.bbox,
             }
             validate_attributes(hit.zone.event_type, attributes)
+            event_id = str(event_id_factory())
+            evidence_ref = self._writer.write(event_id, frame, hit)
             events.append(
                 VisionEvent(
                     schema_version=SCHEMA_VERSION,

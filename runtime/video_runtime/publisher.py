@@ -1,3 +1,4 @@
+import logging
 import time
 from collections import deque
 from dataclasses import dataclass, field
@@ -6,7 +7,12 @@ from typing import Any
 import httpx
 from contracts.events import VisionEvent
 
+logger = logging.getLogger(__name__)
+
 _MAX_PENDING = 100
+# shortcut: the retry queue is memory-only; persist it to disk when a
+# runtime crash must not lose queued events.
+_RETRYABLE_4XX = frozenset({408, 429})
 
 
 @dataclass(frozen=True)
@@ -110,11 +116,15 @@ class HttpEventPublisher:
                     if duplicate:
                         self._metrics.duplicates += 1
                     return PublishOutcome(True, duplicate, 202, None)
-                if 400 <= response.status_code < 500:
-                    return PublishOutcome(
-                        False, False, response.status_code, _error_text(response)
-                    )
-                last_error = f"status {response.status_code}"
+                if response.status_code in _RETRYABLE_4XX:
+                    last_error = f"status {response.status_code}"
+                elif 400 <= response.status_code < 500:
+                    error = _error_text(response)
+                    self._metrics.last_error = error
+                    logger.warning("event %s rejected: %s", event.event_id, error)
+                    return PublishOutcome(False, False, response.status_code, error)
+                else:
+                    last_error = f"status {response.status_code}"
             if attempt < self._retries:
                 self._metrics.retries += 1
                 time.sleep(self._backoff(attempt))
@@ -129,7 +139,7 @@ class HttpEventPublisher:
 
 def _is_permanent(outcome: PublishOutcome) -> bool:
     status = outcome.status_code
-    return status is not None and 400 <= status < 500
+    return status is not None and 400 <= status < 500 and status not in _RETRYABLE_4XX
 
 
 def _result(response: httpx.Response) -> Any:

@@ -33,7 +33,8 @@ camera:
     kind: gige
     cti_path: C:/Program Files/MVS/Runtime/Win64_x64/MvProducerGEV.cti
     serial: null      # serial is preferred; fill it if two cameras exist
-    ip: null          # or pin the camera IP here
+    ip: null          # informational only: selection by IP is unsupported;
+                      # fill `serial` when more than one camera is attached
     width: 2048
     height: 1536
     pixel_format: BayerRG8

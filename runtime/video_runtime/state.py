@@ -50,10 +50,16 @@ class RuntimeState:
 
     def camera_status(self, camera_id: str) -> CameraStatus:
         frame = self.latest(camera_id)
-        if frame is None or self.status is HealthStatus.UNAVAILABLE:
+        not_streaming = {
+            HealthStatus.UNAVAILABLE,
+            HealthStatus.STOPPED,
+            HealthStatus.MISCONFIGURED,
+        }
+        if frame is None or self.status in not_streaming:
             return CameraStatus(
                 camera_id=camera_id,
                 status=HealthStatus.UNAVAILABLE,
+                last_frame_at=None if frame is None else frame.captured_at,
                 error=self.error or "no frame yet",
             )
         return CameraStatus(

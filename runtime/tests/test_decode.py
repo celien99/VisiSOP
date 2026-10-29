@@ -72,3 +72,15 @@ def test_letterbox_pads_to_a_square() -> None:
     assert scale == pytest.approx(0.5)
     assert pad == (0.0, 40.0)
     assert padded[0, 0, 0] == 114
+
+
+def test_decode_rejects_a_transposed_export() -> None:
+    with pytest.raises(ValueError):
+        decode_yolo_output(
+            np.zeros((1, 8400, 84), dtype=np.float32),
+            scale=1.0,
+            pad=(0.0, 0.0),
+            conf_threshold=0.25,
+            iou_threshold=0.45,
+            class_names=COCO_NAMES,
+        )

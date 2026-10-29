@@ -23,6 +23,7 @@ dev = [
     "pytest<10.0.0,>=7.4.3",
     "mypy<3.0.0,>=1.8.0",
     "ruff<1.0.0,>=0.16.0",
+    "types-pyyaml>=6.0.12",
 ]
 
 [tool.uv.sources]
@@ -38,6 +39,11 @@ packages = ["video_runtime"]
 [tool.mypy]
 strict = true
 python_version = "3.12"
+
+[[tool.mypy.overrides]]
+# neither ships stubs or py.typed; they are hardware/vendor boundaries
+module = ["harvesters.*", "onnxruntime"]
+ignore_missing_imports = true
 
 [tool.ruff]
 target-version = "py312"

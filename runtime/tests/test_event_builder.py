@@ -1,7 +1,9 @@
 from dataclasses import replace
 from datetime import timedelta
 
+import pytest
 from conftest import T, make_detection, make_frame
+from contracts.catalog import UnknownEventType
 
 from video_runtime.event_builder import EventBuilder
 from video_runtime.evidence import EvidenceWriter
@@ -75,3 +77,22 @@ def test_two_zones_get_two_events_with_their_own_evidence(tmp_path) -> None:
     assert len({event.event_id for event in events}) == 2
     assert len({event.evidence_refs[0] for event in events}) == 2
     assert events[1].correlation_key == "st-01:target:bottle"
+
+
+def test_invalid_event_type_is_rejected_before_writing_evidence(tmp_path) -> None:
+    unknown = Zone(
+        "pickup",
+        (0.0, 0.0, 0.5, 1.0),
+        frozenset({"bottle"}),
+        "not_registered",
+        0.25,
+        500,
+    )
+    builder = make_builder(tmp_path)
+    with pytest.raises(UnknownEventType):
+        builder.build(
+            make_frame(seq=1, at=T),
+            [ZoneHit(zone=unknown, detection=make_detection())],
+            now=T,
+        )
+    assert list((tmp_path / "tmp").glob("*.jpg")) == []

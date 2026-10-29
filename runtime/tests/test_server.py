@@ -1,4 +1,5 @@
 from conftest import make_frame
+from contracts.runtime import CameraHealthStatus, RuntimeStatus
 from fastapi.testclient import TestClient
 
 from video_runtime.server import create_app
@@ -40,3 +41,18 @@ def test_start_stop_calls_the_state() -> None:
     assert client.post("/cameras/cam-01/start").status_code == 200
     assert client.post("/cameras/cam-01/stop").status_code == 200
     assert calls == ["start", "stop"]
+
+
+def test_stream_for_an_unknown_camera_is_404() -> None:
+    client = TestClient(create_app(RuntimeState(runtime_id="runtime-01")))
+    assert client.get("/stream/cam-09?max_chunks=1").status_code == 404
+
+
+def test_camera_status_reports_a_stopped_source_as_unavailable() -> None:
+    state = RuntimeState(runtime_id="runtime-01")
+    state.set_frame(make_frame(seq=1))
+    state.status = RuntimeStatus.STOPPED
+    state.error = "source stopped"
+    status = state.camera_status("cam-01")
+    assert status.status == CameraHealthStatus.UNAVAILABLE
+    assert status.error == "source stopped"

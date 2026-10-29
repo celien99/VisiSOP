@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from typing import cast
 
 import cv2
 import numpy as np
@@ -54,9 +55,10 @@ def decode_yolo_output(
     input_size: int = 640,
 ) -> list[Detection]:
     """Decode a `[1, 4 + classes, N]` YOLO output into normalized detections."""
-    if output.ndim != 3 or output.shape[0] != 1 or output.shape[1] < 5:
+    expected_rows = 4 + len(class_names)
+    if output.ndim != 3 or output.shape[0] != 1 or output.shape[1] != expected_rows:
         raise ValueError(
-            f"expected a [1, 4 + classes, N] YOLO output, got {output.shape}"
+            f"expected a [1, {expected_rows}, N] YOLO output, got {output.shape}"
         )
 
     rows = output[0].T
@@ -106,4 +108,4 @@ def _iou(
     areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
     box_area = (box[2] - box[0]) * (box[3] - box[1])
     union = areas + box_area - intersection
-    return intersection / np.maximum(union, 1e-9)
+    return cast(NDArray[np.floating], intersection / np.maximum(union, 1e-9))

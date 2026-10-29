@@ -2,6 +2,7 @@ import argparse
 import logging
 import signal
 import threading
+from collections.abc import Callable
 from pathlib import Path
 
 import uvicorn
@@ -53,16 +54,17 @@ def main(argv: list[str] | None = None) -> int:
     threading.Thread(target=server.run, daemon=True).start()
 
     stop_event = threading.Event()
+    publisher = _build_publisher(config)
     registrar = RuntimeRegistrar(
         config.backend.base_url,
         _registration(config),
-        lambda: _heartbeat(config, state),
+        lambda: _heartbeat(config, state, publisher),
     )
     threading.Thread(
         target=registrar.run_forever, args=(stop_event,), daemon=True
     ).start()
 
-    pipeline = build_pipeline(config, state)
+    pipeline = build_pipeline(config, state, publisher)
     for handled in (signal.SIGINT, signal.SIGTERM):
         signal.signal(handled, _stopper(pipeline, stop_event))
 
@@ -93,7 +95,9 @@ def build_source(config: RuntimeConfig) -> VideoSource:
     raise SystemExit(f"unsupported source kind: {source.kind}")
 
 
-def build_pipeline(config: RuntimeConfig, state: RuntimeState) -> Pipeline:
+def build_pipeline(
+    config: RuntimeConfig, state: RuntimeState, publisher: HttpEventPublisher
+) -> Pipeline:
     class_names = config.model.class_names_path.read_text(encoding="utf-8").splitlines()
     inference = OnnxYoloBackend(
         config.model.onnx_path,
@@ -115,13 +119,17 @@ def build_pipeline(config: RuntimeConfig, state: RuntimeState) -> Pipeline:
         inference,
         ZoneMapper(config.zones),
         builder,
-        HttpEventPublisher(
-            config.backend.base_url,
-            timeout_ms=config.backend.timeout_ms,
-            retries=config.backend.retries,
-        ),
+        publisher,
         state,
         inference_interval_ms=config.inference_interval_ms,
+    )
+
+
+def _build_publisher(config: RuntimeConfig) -> HttpEventPublisher:
+    return HttpEventPublisher(
+        config.backend.base_url,
+        timeout_ms=config.backend.timeout_ms,
+        retries=config.backend.retries,
     )
 
 
@@ -136,15 +144,29 @@ def _registration(config: RuntimeConfig) -> RuntimeRegistration:
     )
 
 
-def _heartbeat(config: RuntimeConfig, state: RuntimeState) -> RuntimeHeartbeat:
+def _heartbeat(
+    config: RuntimeConfig, state: RuntimeState, publisher: HttpEventPublisher
+) -> RuntimeHeartbeat:
+    metrics = dict(state.metrics)
+    metrics.update(
+        {
+            "events_pending": float(len(publisher.pending)),
+            "events_dropped": float(publisher.dropped),
+            "events_failed": float(publisher.metrics.failed),
+            "events_retries": float(publisher.metrics.retries),
+            "events_duplicates": float(publisher.metrics.duplicates),
+        }
+    )
     return RuntimeHeartbeat(
         status=state.status,
-        metrics=dict(state.metrics),
+        metrics=metrics,
         cameras=(state.camera_status(config.camera.camera_id),),
     )
 
 
-def _stopper(pipeline: Pipeline, stop_event: threading.Event):
+def _stopper(
+    pipeline: Pipeline, stop_event: threading.Event
+) -> Callable[[int, object], None]:
     def handle(signum: int, _frame: object) -> None:
         logger.info("signal %s received; stopping", signum)
         stop_event.set()
