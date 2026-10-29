@@ -77,7 +77,12 @@ uv run python -m app.scripts.seed_demo
 
 It prints the station (`st-01`), camera (`cam-01`), published SOP version and
 the active execution ID. It is idempotent; re-running never deletes data.
-Copy the execution ID for step 11.
+
+An execution only accepts events for `EXECUTION_ACCEPT_WINDOW_MS` (10 min) after
+it was created; later events are quarantined as `LATE_EVENT`. If the active
+execution is past that window, the seed **aborts it and creates a fresh one**
+(audited), so run the seed right before the demo. Copy the execution ID for
+step 11.
 
 ## 7. Camera check (before the runtime)
 

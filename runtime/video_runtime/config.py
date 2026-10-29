@@ -4,7 +4,7 @@ from typing import Annotated, Any, Literal
 
 import yaml
 from contracts.enums import CameraRole
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class _ConfigModel(BaseModel):
@@ -72,6 +72,13 @@ class PreviewConfig(_ConfigModel):
     port: int = 8001
     fps: int = 10
 
+    @field_validator("host")
+    @classmethod
+    def _loopback_only(cls, value: str) -> str:
+        if value not in {"127.0.0.1", "localhost", "::1"}:
+            raise ValueError("preview.host must be a loopback address")
+        return value
+
 
 class RuntimeConfig(_ConfigModel):
     runtime_id: str
@@ -88,7 +95,9 @@ class RuntimeConfig(_ConfigModel):
 def load_config(path: Path) -> RuntimeConfig:
     config_path = Path(path)
     data: dict[str, Any] = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-    data["evidence_dir"] = os.environ["EVIDENCE_DIR"]
+    # Absolute so the backend and the runtime agree on one directory even
+    # when they start from different working directories.
+    data["evidence_dir"] = Path(os.environ["EVIDENCE_DIR"]).expanduser().resolve()
     _resolve_paths(data, config_path.parent)
     return RuntimeConfig.model_validate(data)
 

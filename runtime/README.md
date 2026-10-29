@@ -13,7 +13,8 @@ EVIDENCE_DIR=/path/to/evidence uv run python -m video_runtime.main --config conf
 ```
 
 - Evidence frames are written to `$EVIDENCE_DIR/tmp/{event_id}.jpg`; the backend
-  moves and verifies them. A preview is not evidence.
+  moves and verifies them. A preview is not evidence. `EVIDENCE_DIR` is resolved
+  to an absolute path and must be the **same directory** the backend uses.
 - The preview server binds `127.0.0.1:8001` (`/stream/{camera_id}`,
   `/snapshot/{camera_id}`, `/health`).
 - The YOLO model is not committed. Export it once:

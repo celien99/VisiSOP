@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from video_runtime.config import FileSourceConfig, GigESourceConfig, load_config
 
@@ -75,3 +76,24 @@ def test_evidence_dir_is_required(tmp_path, monkeypatch) -> None:
     path.write_text(FILE_CONFIG, encoding="utf-8")
     with pytest.raises(KeyError):
         load_config(path)
+
+
+def test_preview_host_must_be_loopback(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("EVIDENCE_DIR", str(tmp_path))
+    path = tmp_path / "demo.yaml"
+    path.write_text(FILE_CONFIG + "preview:\n  host: 0.0.0.0\n", encoding="utf-8")
+    with pytest.raises(ValidationError):
+        load_config(path)
+
+
+def test_relative_evidence_dir_is_resolved(tmp_path, monkeypatch) -> None:
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    path = config_dir / "demo.yaml"
+    path.write_text(FILE_CONFIG, encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("EVIDENCE_DIR", "evidence")
+
+    config = load_config(path)
+
+    assert config.evidence_dir == (tmp_path / "evidence").resolve()

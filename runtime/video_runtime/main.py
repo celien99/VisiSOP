@@ -6,6 +6,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 import uvicorn
+from contracts.catalog import catalog_snapshot
 from contracts.runtime import RuntimeHeartbeat, RuntimeRegistration
 
 from video_runtime import __version__
@@ -77,10 +78,12 @@ def main(argv: list[str] | None = None) -> int:
         config.preview.port,
         config.camera.camera_id,
     )
-    pipeline.run()
-
-    stop_event.set()
-    server.should_exit = True
+    try:
+        pipeline.run()
+    finally:
+        stop_event.set()
+        server.should_exit = True
+        pipeline.close()
     logger.info("runtime stopped")
     return 0
 
@@ -95,10 +98,27 @@ def build_source(config: RuntimeConfig) -> VideoSource:
     raise SystemExit(f"unsupported source kind: {source.kind}")
 
 
+def preflight(config: RuntimeConfig, class_names: list[str]) -> None:
+    """Fail at startup, not silently per frame, on a misconfigured zone."""
+    registered = catalog_snapshot()
+    known_classes = set(class_names)
+    for zone in config.zones:
+        if zone.event_type not in registered:
+            raise SystemExit(
+                f"zone {zone.name!r} uses unregistered event type {zone.event_type!r}"
+            )
+        unknown = sorted(set(zone.classes) - known_classes)
+        if unknown:
+            raise SystemExit(
+                f"zone {zone.name!r} uses classes the model does not know: {unknown}"
+            )
+
+
 def build_pipeline(
     config: RuntimeConfig, state: RuntimeState, publisher: HttpEventPublisher
 ) -> Pipeline:
     class_names = config.model.class_names_path.read_text(encoding="utf-8").splitlines()
+    preflight(config, class_names)
     inference = OnnxYoloBackend(
         config.model.onnx_path,
         class_names,
