@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic import HttpUrl, PostgresDsn, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -14,6 +16,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str
     SENTRY_DSN: HttpUrl | None = None
     DATABASE_URL: PostgresDsn
+    EVIDENCE_DIR: Path = Path("../evidence")
     RUNTIME_STALE_AFTER_MS: int = 15000
 
     @field_validator("DATABASE_URL", mode="before")

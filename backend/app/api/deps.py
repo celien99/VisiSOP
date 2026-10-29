@@ -4,7 +4,9 @@ from typing import Annotated
 from fastapi import Depends
 from sqlmodel import Session
 
+from app.core.config import settings
 from app.core.db import engine
+from app.infrastructure.evidence_store import EvidenceStore
 from app.infrastructure.runtime_client import RuntimeClient, RuntimeClientFactory
 
 
@@ -23,3 +25,10 @@ def get_runtime_client_factory() -> RuntimeClientFactory:
 RuntimeClientFactoryDep = Annotated[
     RuntimeClientFactory, Depends(get_runtime_client_factory)
 ]
+
+
+def get_evidence_store() -> EvidenceStore:
+    return EvidenceStore(settings.EVIDENCE_DIR)
+
+
+EvidenceStoreDep = Annotated[EvidenceStore, Depends(get_evidence_store)]

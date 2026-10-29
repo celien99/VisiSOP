@@ -12,6 +12,7 @@ from app.api.deps import get_db
 from app.api.schemas.execution import ExecutionDetailRead
 from app.application.runtime_registry import runtime_registry
 from app.application.sop_service import create_sop, publish_sop
+from app.core.config import settings
 from app.core.db import engine
 from app.main import app
 from app.models import (
@@ -61,6 +62,14 @@ def client(db_session: Session) -> Generator[TestClient]:
     # no `with`: lifespan/workers are not started
     yield TestClient(app)
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def evidence_dir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Path:
+    monkeypatch.setattr(settings, "EVIDENCE_DIR", tmp_path)
+    return tmp_path
 
 
 @pytest.fixture
