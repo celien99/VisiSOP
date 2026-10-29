@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.routes import (
+    alarms,
     cameras,
     events,
     evidence,
@@ -9,6 +10,7 @@ from app.api.routes import (
     sops,
     stations,
     utils,
+    ws,
 )
 
 api_router = APIRouter()
@@ -20,3 +22,5 @@ api_router.include_router(runtimes.router)
 api_router.include_router(executions.router)
 api_router.include_router(evidence.router)
 api_router.include_router(events.router)
+api_router.include_router(alarms.router)
+api_router.include_router(ws.router)

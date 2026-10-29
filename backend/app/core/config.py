@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     DATABASE_URL: PostgresDsn
     EVIDENCE_DIR: Path = Path("../evidence")
     RUNTIME_STALE_AFTER_MS: int = 15000
+    OUTBOX_POLL_MS: int = 200
+    WORKERS_ENABLED: bool = True
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod

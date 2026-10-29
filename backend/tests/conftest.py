@@ -13,18 +13,20 @@ from sqlmodel import Session
 from app.api.deps import get_db
 from app.api.schemas.execution import ExecutionDetailRead
 from app.application import execution_service
+from app.application.alarm_service import upsert_alarm
 from app.application.runtime_registry import runtime_registry
 from app.application.sop_service import create_sop, publish_sop
 from app.core.config import settings
 from app.core.db import engine
 from app.main import app
 from app.models import (
+    Alarm,
     Camera,
     SOPVersion,
     Station,
     StationCameraBinding,
 )
-from contracts.enums import CameraRole
+from contracts.enums import AlarmCategory, AlarmSeverity, CameraRole
 
 DEMO_SOP_PATH = Path(__file__).parents[1] / "app" / "seed" / "bottle_transfer.json"
 
@@ -189,3 +191,23 @@ def event_payload(event_with_evidence: VisionEvent) -> dict[str, object]:
     payload = event_with_evidence.model_dump(mode="json")
     payload["evidence_refs"] = []
     return payload
+
+
+@pytest.fixture
+def open_alarm(db_session: Session, now: datetime) -> Alarm:
+    alarm = upsert_alarm(
+        db_session,
+        dedup_key="station:st-01:camera:-:DEVICE_HEALTH",
+        category=AlarmCategory.DEVICE_HEALTH,
+        severity=AlarmSeverity.HIGH,
+        reason_code=None,
+        execution_id=None,
+        station_id="st-01",
+        camera_id=None,
+        step_key=None,
+        source_event_id=None,
+        message="test alarm",
+        now=now,
+    )
+    db_session.commit()
+    return alarm
