@@ -15,6 +15,7 @@ import { Route as LayoutAnalyticsRouteImport } from './routes/_layout/analytics'
 import { Route as LayoutRecordsRouteImport } from './routes/_layout/records'
 import { Route as LayoutSopsRouteImport } from './routes/_layout/sops'
 import { Route as LayoutSystemRouteImport } from './routes/_layout/system'
+import { Route as LayoutExecutionsExecutionIdRouteImport } from './routes/_layout/executions.$executionId'
 import { Route as LayoutStationsIndexRouteImport } from './routes/_layout/stations.index'
 import { Route as LayoutStationsStationIdRouteImport } from './routes/_layout/stations.$stationId'
 
@@ -47,6 +48,12 @@ const LayoutSystemRoute = LayoutSystemRouteImport.update({
   path: '/system',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutExecutionsExecutionIdRoute =
+  LayoutExecutionsExecutionIdRouteImport.update({
+    id: '/executions/$executionId',
+    path: '/executions/$executionId',
+    getParentRoute: () => LayoutRoute,
+  } as any)
 const LayoutStationsIndexRoute = LayoutStationsIndexRouteImport.update({
   id: '/stations/',
   path: '/stations/',
@@ -64,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/records': typeof LayoutRecordsRoute
   '/sops': typeof LayoutSopsRoute
   '/system': typeof LayoutSystemRoute
+  '/executions/$executionId': typeof LayoutExecutionsExecutionIdRoute
   '/stations/$stationId': typeof LayoutStationsStationIdRoute
   '/stations/': typeof LayoutStationsIndexRoute
 }
@@ -73,6 +81,7 @@ export interface FileRoutesByTo {
   '/sops': typeof LayoutSopsRoute
   '/system': typeof LayoutSystemRoute
   '/': typeof LayoutIndexRoute
+  '/executions/$executionId': typeof LayoutExecutionsExecutionIdRoute
   '/stations/$stationId': typeof LayoutStationsStationIdRoute
   '/stations': typeof LayoutStationsIndexRoute
 }
@@ -84,6 +93,7 @@ export interface FileRoutesById {
   '/_layout/sops': typeof LayoutSopsRoute
   '/_layout/system': typeof LayoutSystemRoute
   '/_layout/': typeof LayoutIndexRoute
+  '/_layout/executions/$executionId': typeof LayoutExecutionsExecutionIdRoute
   '/_layout/stations/$stationId': typeof LayoutStationsStationIdRoute
   '/_layout/stations/': typeof LayoutStationsIndexRoute
 }
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
     | '/records'
     | '/sops'
     | '/system'
+    | '/executions/$executionId'
     | '/stations/$stationId'
     | '/stations/'
   fileRoutesByTo: FileRoutesByTo
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
     | '/sops'
     | '/system'
     | '/'
+    | '/executions/$executionId'
     | '/stations/$stationId'
     | '/stations'
   id:
@@ -114,6 +126,7 @@ export interface FileRouteTypes {
     | '/_layout/sops'
     | '/_layout/system'
     | '/_layout/'
+    | '/_layout/executions/$executionId'
     | '/_layout/stations/$stationId'
     | '/_layout/stations/'
   fileRoutesById: FileRoutesById
@@ -166,6 +179,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSystemRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/executions/$executionId': {
+      id: '/_layout/executions/$executionId'
+      path: '/executions/$executionId'
+      fullPath: '/executions/$executionId'
+      preLoaderRoute: typeof LayoutExecutionsExecutionIdRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/stations/': {
       id: '/_layout/stations/'
       path: '/stations'
@@ -189,6 +209,7 @@ interface LayoutRouteChildren {
   LayoutSopsRoute: typeof LayoutSopsRoute
   LayoutSystemRoute: typeof LayoutSystemRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
+  LayoutExecutionsExecutionIdRoute: typeof LayoutExecutionsExecutionIdRoute
   LayoutStationsStationIdRoute: typeof LayoutStationsStationIdRoute
   LayoutStationsIndexRoute: typeof LayoutStationsIndexRoute
 }
@@ -199,6 +220,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutSopsRoute: LayoutSopsRoute,
   LayoutSystemRoute: LayoutSystemRoute,
   LayoutIndexRoute: LayoutIndexRoute,
+  LayoutExecutionsExecutionIdRoute: LayoutExecutionsExecutionIdRoute,
   LayoutStationsStationIdRoute: LayoutStationsStationIdRoute,
   LayoutStationsIndexRoute: LayoutStationsIndexRoute,
 }

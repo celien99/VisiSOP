@@ -29,6 +29,15 @@ export const EXECUTION_STATUS_LABEL: Record<string, string> = {
   NEEDS_REVIEW: "待复核",
 }
 
+export const EXECUTION_STATUS_COLOR: Record<string, string> = {
+  CREATED: "var(--vs-off)",
+  RUNNING: "var(--vs-ink)",
+  PAUSED: "var(--vs-warn)",
+  COMPLETED: "var(--vs-ok)",
+  ABORTED: "var(--vs-off)",
+  NEEDS_REVIEW: "var(--vs-warn)",
+}
+
 export const PROCESS_STATUS_LABEL: Record<string, string> = {
   IDLE: "空闲",
   RUNNING: "执行中",
