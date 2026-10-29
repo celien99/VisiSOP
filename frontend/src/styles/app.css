@@ -843,3 +843,21 @@
     }
   }
 }
+
+@layer components {
+  .vs-record-filters {
+    margin-top: var(--vs-panel-gap);
+    padding: var(--vs-space-2) 0;
+    background: transparent;
+    border-bottom: 0;
+  }
+  .vs-input--compact {
+    width: 8rem;
+  }
+  .vs-system-health {
+    margin-top: var(--vs-panel-gap);
+  }
+  [data-slot="tabs-list"] {
+    margin-top: var(--vs-space-5);
+  }
+}

@@ -1,22 +1,32 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { PendingPage } from "@/components/Common/PendingPage"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import type { RecordsSearch } from "@/features/records/RecordsPage"
+import { RecordsPage } from "@/features/records/RecordsPage"
 
 export const Route = createFileRoute("/_layout/records")({
   component: RecordsRoute,
-  head: () => ({ meta: [{ title: "记录 · VisiSOP" }] }),
+  head: () => ({ meta: [{ title: "记录 — VisiSOP" }] }),
+  validateSearch: (search: Record<string, unknown>): RecordsSearch => ({
+    tab: search.tab === "alarms" ? "alarms" : undefined,
+    status:
+      typeof search.status === "string" && search.status
+        ? search.status
+        : undefined,
+    station_id:
+      typeof search.station_id === "string" && search.station_id
+        ? search.station_id
+        : undefined,
+  }),
 })
 
 function RecordsRoute() {
+  const search = Route.useSearch()
+  const navigate = useNavigate()
   return (
-    <PendingPage
-      code="RECORDS / 记录"
-      dependencies={[
-        "执行与告警的检索、筛选接口",
-        "证据可用性字段与详情接口",
-        "确认与解决动作及权限",
-      ]}
-      summary="记录检索尚未接入。接口到位后，执行与告警分开展示、分别计数；工艺合规与系统健康不混成一个总数，证据不可用时明确写出原因，而不是打开一个空查看器。"
-      title="记录"
+    <RecordsPage
+      onSearchChange={(patch) =>
+        navigate({ search: { ...search, ...patch }, to: "/records" })
+      }
+      search={search}
     />
   )
 }

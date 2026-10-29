@@ -76,3 +76,37 @@ export const REASON_CODE_LABEL: Record<string, string> = {
   UNEXPECTED_STEP: "意外步骤",
   OUT_OF_ORDER: "顺序错误",
 }
+
+export const ALARM_STATUS_LABEL: Record<string, string> = {
+  OPEN: "未处理",
+  ACKNOWLEDGED: "已确认",
+  RESOLVED: "已解决",
+}
+
+export const ALARM_SEVERITY_LABEL: Record<string, string> = {
+  LOW: "低",
+  MEDIUM: "中",
+  HIGH: "高",
+  CRITICAL: "严重",
+}
+
+export const ALARM_SEVERITY_COLOR: Record<string, string> = {
+  LOW: "var(--vs-off)",
+  MEDIUM: "var(--vs-warn)",
+  HIGH: "var(--vs-crit)",
+  CRITICAL: "var(--vs-crit)",
+}
+
+export const ALARM_CATEGORY_LABEL: Record<string, string> = {
+  PROCESS_COMPLIANCE: "工艺合规",
+  VISION_QUALITY: "视觉质量",
+  DEVICE_HEALTH: "设备健康",
+  DATA_INTEGRITY: "数据完整性",
+  SYSTEM: "系统",
+}
+
+export const EVIDENCE_STATUS_LABEL: Record<string, string> = {
+  AVAILABLE: "可用",
+  PENDING_VERIFY: "待校验",
+  MISSING: "缺失",
+}
