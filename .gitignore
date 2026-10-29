@@ -10,3 +10,5 @@ backend/app/frontend/
 .taste-skill/
 .claude-flow/
 .swarm/
+# agent scratch (superpowers plan ledgers)
+.superpowers/
