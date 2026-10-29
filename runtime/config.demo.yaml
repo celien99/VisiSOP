@@ -1,0 +1,44 @@
+runtime_id: runtime-01
+station_id: st-01
+camera:
+  camera_id: cam-01
+  role: overview
+  source:
+    kind: gige
+    cti_path: C:/Program Files/MVS/Runtime/Win64_x64/MvProducerGEV.cti
+    serial: null
+    ip: null
+    width: 2048
+    height: 1536
+    pixel_format: BayerRG8
+    exposure_us: 8000
+    gain_db: 0.0
+    packet_size: 8192
+inference_interval_ms: 100
+model:
+  onnx_path: models/yolo11n.onnx
+  class_names_path: models/coco.names
+  input_size: 640
+  confidence: 0.25
+  iou: 0.45
+backend:
+  base_url: http://127.0.0.1:8000/api
+  timeout_ms: 2000
+  retries: 3
+preview:
+  host: 127.0.0.1
+  port: 8001
+  fps: 10
+zones:
+  - name: pickup
+    rect: [0.05, 0.15, 0.45, 0.95]
+    classes: [bottle]
+    event_type: bottle_in_pickup_zone
+    min_confidence: 0.25
+    emit_interval_ms: 500
+  - name: target
+    rect: [0.55, 0.15, 0.95, 0.95]
+    classes: [bottle]
+    event_type: bottle_in_target_zone
+    min_confidence: 0.25
+    emit_interval_ms: 500

@@ -8,7 +8,9 @@ Full-stack skeleton:
 - The TypeScript API client is generated from the backend's OpenAPI schema.
 - Playwright for end-to-end tests; Pytest for the backend.
 
-There is no domain logic yet: the only endpoint is a health check.
+The bottle-transfer demo runs the API, the React wall, and the native video
+runtime in `runtime/` on one machine: see the
+[Windows demo runbook](./docs/runbooks/windows-demo.md).
 
 ## Local Development
 
@@ -31,6 +33,7 @@ General development docs: [development.md](./development.md).
 
 ## Documentation
 
+- Windows demo: [runbook](./docs/runbooks/windows-demo.md), [B1 acceptance](./docs/runbooks/acceptance-b1.md), [camera spike](./docs/runbooks/camera-spike.md)
 - Backend: [backend/README.md](./backend/README.md)
 - Frontend: [frontend/README.md](./frontend/README.md)
 - Deployment to FastAPI Cloud: [deployment.md](./deployment.md)
