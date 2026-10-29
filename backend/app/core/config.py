@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     EVIDENCE_DIR: Path = Path("../evidence")
     RUNTIME_STALE_AFTER_MS: int = 15000
     OUTBOX_POLL_MS: int = 200
+    TIMEOUT_POLL_MS: int = 1000
     WORKERS_ENABLED: bool = True
 
     @field_validator("DATABASE_URL", mode="before")
