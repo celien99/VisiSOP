@@ -731,3 +731,17 @@
     cursor: not-allowed;
   }
 }
+
+@layer components {
+  .vs-station-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: var(--vs-panel-gap);
+    margin-top: var(--vs-panel-gap);
+  }
+  @media (max-width: 64rem) {
+    .vs-station-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}

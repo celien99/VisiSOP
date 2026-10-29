@@ -40,7 +40,7 @@ export function PreviewPanel({
   if (state === "no-signal") {
     return (
       <div className="vs-preview vs-preview--offline">
-        <span>没有画面信号</span>
+        <span>无信号 · 没有画面信号</span>
         {lastFrameAt ? (
           <span className="vs-preview__stamp">
             最后 {formatTime(lastFrameAt)}
