@@ -8,7 +8,7 @@
       "key": "pick_bottle",
       "name": "从取料区取起瓶体",
       "type": "ACTION",
-      "timeout_ms": 60000,
+      "timeout_ms": 300000,
       "completion": {"mode": "EVENT_RULE", "all": [
         {"event_type": "bottle_in_pickup_zone", "min_confidence": 0.4, "stable_for_ms": 500}
       ]},
@@ -19,7 +19,7 @@
       "name": "将瓶体放入目标区",
       "type": "ACTION",
       "depends_on": ["pick_bottle"],
-      "timeout_ms": 60000,
+      "timeout_ms": 300000,
       "completion": {"mode": "EVENT_RULE", "all": [
         {"event_type": "bottle_in_target_zone", "min_confidence": 0.4, "stable_for_ms": 500}
       ]},
