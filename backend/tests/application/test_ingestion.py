@@ -79,6 +79,37 @@ def test_late_pickup_does_not_complete_the_target_step(
     assert any(alarm.reason_code == "OUT_OF_ORDER" for alarm in alarms)
 
 
+def test_event_after_completion_does_not_grow_the_step_evidence(
+    db_session: Session,
+    active_execution: ExecutionDetailRead,
+    make_zone_event,
+    now: datetime,
+) -> None:
+    ingest_event(db_session, make_zone_event("evt-c1", "pickup", now), now)
+    ingest_event(
+        db_session,
+        make_zone_event("evt-c2", "pickup", now + timedelta(milliseconds=600)),
+        now + timedelta(milliseconds=600),
+    )
+    pick = db_session.get(StepExecution, (active_execution.id, "pick_bottle"))
+    assert pick is not None and pick.status == "COMPLETED"
+    before = len(pick.matched_events)
+
+    result = ingest_event(
+        db_session,
+        make_zone_event("evt-c3", "pickup", now + timedelta(milliseconds=1200)),
+        now + timedelta(milliseconds=1200),
+    )
+
+    assert result.result is ProcessingResult.ACCEPTED
+    db_session.expire_all()
+    pick = db_session.get(StepExecution, (active_execution.id, "pick_bottle"))
+    assert pick is not None
+    assert len(pick.matched_events) == before
+    alarms = db_session.exec(select(Alarm)).all()
+    assert any(alarm.reason_code == "OUT_OF_ORDER" for alarm in alarms)
+
+
 def test_no_active_execution_is_quarantined(
     db_session: Session, seeded_station, make_zone_event, now: datetime
 ) -> None:

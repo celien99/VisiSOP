@@ -554,6 +554,43 @@ def apply(
             alarms.append(_alarm(ReasonCode.OUT_OF_ORDER, event, key))
             continue
 
+        if step_state.status is StepStatus.COMPLETED:
+            # An event that no longer applies must not keep growing the
+            # step's evidence; surface it as out of order instead.
+            alarms.append(_alarm(ReasonCode.OUT_OF_ORDER, event, key))
+            continue
+
+        if step_state.status is StepStatus.TIMED_OUT:
+            if (
+                matched.accepted
+                and _trigger_conditions(compiled, event.event_type)
+                and _rule_satisfied(
+                    compiled.completion,
+                    (*step_state.matched_events, matched),
+                    step_state.activated_at,
+                )
+            ):
+                updates.append(EvidenceUpdate(step_key=key, event=matched))
+                steps[key] = dataclasses.replace(
+                    step_state,
+                    status=StepStatus.NEEDS_REVIEW,
+                    reason_code=ReasonCode.LATE_EVENT,
+                )
+                transitions.append(
+                    StepTransition(
+                        step_key=key,
+                        from_status=StepStatus.TIMED_OUT,
+                        to_status=StepStatus.NEEDS_REVIEW,
+                        reason_code=ReasonCode.LATE_EVENT,
+                        matched_event_ids=(event.event_id,),
+                    )
+                )
+            else:
+                alarms.append(_alarm(ReasonCode.OUT_OF_ORDER, event, key))
+            continue
+        if step_state.status not in (StepStatus.ACTIVE, StepStatus.PENDING):
+            continue
+
         updates.append(EvidenceUpdate(step_key=key, event=matched))
 
         failure = compiled.failure
@@ -576,36 +613,6 @@ def apply(
                     matched_event_ids=(event.event_id,),
                 )
             )
-            continue
-
-        if step_state.status is StepStatus.COMPLETED:
-            continue
-        if step_state.status is StepStatus.TIMED_OUT:
-            if (
-                matched.accepted
-                and _trigger_conditions(compiled, event.event_type)
-                and _rule_satisfied(
-                    compiled.completion,
-                    (*step_state.matched_events, matched),
-                    step_state.activated_at,
-                )
-            ):
-                steps[key] = dataclasses.replace(
-                    step_state,
-                    status=StepStatus.NEEDS_REVIEW,
-                    reason_code=ReasonCode.LATE_EVENT,
-                )
-                transitions.append(
-                    StepTransition(
-                        step_key=key,
-                        from_status=StepStatus.TIMED_OUT,
-                        to_status=StepStatus.NEEDS_REVIEW,
-                        reason_code=ReasonCode.LATE_EVENT,
-                        matched_event_ids=(event.event_id,),
-                    )
-                )
-            continue
-        if step_state.status not in (StepStatus.ACTIVE, StepStatus.PENDING):
             continue
 
         if not matched.accepted:
