@@ -91,8 +91,8 @@ def test_load_config_parses_the_mvs_source(tmp_path, monkeypatch) -> None:
     source = config.camera.source
     assert isinstance(source, MvsSourceConfig)
     assert source.serial == "DA9184675"
-    assert source.width == 2048 and source.height == 1536
-    assert source.pixel_format == "BayerRG8"
+    assert source.exposure_us == 8000
+    assert source.gain_db == 0.0
 
 
 def test_evidence_dir_is_required(tmp_path, monkeypatch) -> None:

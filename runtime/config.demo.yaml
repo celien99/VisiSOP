@@ -9,12 +9,10 @@ camera:
     kind: mvs
     serial: DA9184675
     ip: null
-    width: 2048
-    height: 1536
-    pixel_format: BayerRG8
-    exposure_us: 8000
-    gain_db: 0.0
-    packet_size: 8192
+    # Only exposure and gain are written; resolution, pixel format, trigger,
+    # and packet size stay as configured on the camera in MVS.
+    exposure_us: 20000
+    gain_db: 6.0
 inference_interval_ms: 100
 model:
   onnx_path: models/yolo11n.onnx
@@ -32,13 +30,13 @@ preview:
   fps: 10
 zones:
   - name: pickup
-    rect: [0.05, 0.15, 0.45, 0.95]
+    rect: [0.68, 0.10, 0.99, 0.95]
     classes: [bottle]
     event_type: bottle_in_pickup_zone
     min_confidence: 0.25
     emit_interval_ms: 500
   - name: target
-    rect: [0.55, 0.15, 0.95, 0.95]
+    rect: [0.08, 0.35, 0.55, 0.95]
     classes: [bottle]
     event_type: bottle_in_target_zone
     min_confidence: 0.25

@@ -20,6 +20,12 @@ class FileSourceConfig(_ConfigModel):
 class _GigECameraConfig(_ConfigModel):
     serial: str | None = None
     ip: str | None = None
+    timeout_ms: int = 2000
+
+
+class GigESourceConfig(_GigECameraConfig):
+    kind: Literal["gige"] = "gige"
+    cti_path: Path
     width: int = 2048
     height: int = 1536
     offset_x: int = 0
@@ -28,18 +34,18 @@ class _GigECameraConfig(_ConfigModel):
     exposure_us: int = 8000
     gain_db: float = 0.0
     packet_size: int = 8192
-    timeout_ms: int = 2000
-
-
-class GigESourceConfig(_GigECameraConfig):
-    kind: Literal["gige"] = "gige"
-    cti_path: Path
 
 
 class MvsSourceConfig(_GigECameraConfig):
-    """HIKROBOT's own SDK, for producers whose GenTL metadata is not UTF-8."""
+    """HIKROBOT's own SDK.
+
+    Only exposure and gain are written; resolution, pixel format, triggering,
+    and the network packet size stay exactly as configured on the camera.
+    """
 
     kind: Literal["mvs"] = "mvs"
+    exposure_us: int = 8000
+    gain_db: float = 0.0
 
 
 SourceConfig = Annotated[

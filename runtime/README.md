@@ -19,6 +19,11 @@ that genicam's bindings cannot decode on CPython 3.12, so its supported SDK is
 the reliable path. `load_sdk()` finds the vendor bindings through
 `MVCAM_COMMON_RUNENV`, which the MVS installer sets.
 
+The `mvs` source writes exposure and gain only; resolution, pixel format,
+triggering, and packet size are whatever MVS configured on the camera. Frames
+are decoded from the type reported in each frame (RGB8Packed, BGR8Packed,
+YUV422, Mono8, BayerRG8).
+
 - Evidence frames are written to `$EVIDENCE_DIR/tmp/{event_id}.jpg`; the backend
   moves and verifies them. A preview is not evidence. `EVIDENCE_DIR` is resolved
   to an absolute path and must be the **same directory** the backend uses.

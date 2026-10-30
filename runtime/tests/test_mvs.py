@@ -5,7 +5,7 @@ import pytest
 
 import video_runtime.sources.mvs as mvs
 from video_runtime.config import MvsSourceConfig
-from video_runtime.sources.mvs import MvsSource, matches_device
+from video_runtime.sources.mvs import MvsSource, matches_device, to_bgr
 
 
 class FakeKit:
@@ -31,6 +31,36 @@ def test_device_selection_prefers_the_serial() -> None:
     by_ip = MvsSourceConfig(ip="10.172.30.1")
     assert matches_device(by_ip, serial_number="x", current_ip="10.172.30.1")
     assert matches_device(MvsSourceConfig(), serial_number="x", current_ip="y")
+
+
+def test_rgb8_packed_already_arrives_as_bgr() -> None:
+    packed = np.zeros((2, 2, 3), dtype=np.uint8)
+    packed[..., 0], packed[..., 1], packed[..., 2] = 10, 20, 30
+    out = to_bgr(packed.reshape(-1), 2, 2, 0x02180014)
+    assert out[0, 0].tolist() == [10, 20, 30]
+
+
+def test_bgr8_packed_arrives_as_rgb() -> None:
+    packed = np.zeros((2, 2, 3), dtype=np.uint8)
+    packed[..., 0], packed[..., 1], packed[..., 2] = 10, 20, 30
+    out = to_bgr(packed.reshape(-1), 2, 2, 0x02180015)
+    assert out[0, 0].tolist() == [30, 20, 10]
+
+
+def test_mono8_and_bayer_become_three_channel_bgr() -> None:
+    mono = np.zeros((4, 6), dtype=np.uint8)
+    assert to_bgr(mono.reshape(-1), 6, 4, 0x01080001).shape == (4, 6, 3)
+    assert to_bgr(mono.reshape(-1), 6, 4, 0x01080009).shape == (4, 6, 3)
+
+
+def test_yuyv_becomes_three_channel_bgr() -> None:
+    yuyv = np.zeros((4, 6, 2), dtype=np.uint8)
+    assert to_bgr(yuyv.reshape(-1), 6, 4, 0x02100032).shape == (4, 6, 3)
+
+
+def test_unknown_pixel_type_names_the_problem() -> None:
+    with pytest.raises(RuntimeError, match="unsupported camera pixel type"):
+        to_bgr(np.zeros(16, dtype=np.uint8), 4, 2, 0x0108000A)
 
 
 def test_read_returns_a_bgr_frame_and_advances_the_sequence() -> None:

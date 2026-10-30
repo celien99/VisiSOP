@@ -118,6 +118,11 @@ uv run python -m video_runtime.main --config config.demo.yaml
 `config.demo.yaml` uses `source.kind: mvs` (the HIKROBOT SDK). Do not open the
 same camera in MVS while the runtime runs: the SDK takes it exclusively.
 
+The runtime writes **exposure and gain only**. Resolution, pixel format,
+triggering, and packet size come from the camera as configured in MVS. Select
+`RGB8Packed` in MVS for camera-processed colour; the runtime decodes whatever
+format the camera streams (RGB8Packed, BGR8Packed, YUV422, Mono8, BayerRG8).
+
 - Preview: `http://127.0.0.1:8001/stream/cam-01`, snapshot at
   `/snapshot/cam-01`, health at `/health`.
 - It registers with `http://127.0.0.1:8000/api` and heartbeats every 5 s. If

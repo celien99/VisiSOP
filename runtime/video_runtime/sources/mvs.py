@@ -7,13 +7,13 @@ producers keep using `GigEHKSource`.
 """
 
 import ctypes
-import logging
 import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol
 
+import cv2
 import numpy as np
 from contracts.runtime import HealthStatus
 
@@ -22,10 +22,16 @@ from video_runtime.frame import Frame
 from video_runtime.sources.base import SourceHealth
 from video_runtime.sources.gige import bayer_to_bgr
 
-logger = logging.getLogger(__name__)
-
 _EXPOSURE_AUTO_OFF = 0
 _GAIN_AUTO_OFF = 0
+
+# GenICam PFNC values reported in MV_FRAME_OUT.stFrameInfo.enPixelType.
+_MONO8 = 0x01080001
+_BAYER_RG8 = 0x01080009
+_YUV422_YUYV_PACKED = 0x02100032
+_YUV422_PACKED = 0x0210003F
+_RGB8_PACKED = 0x02180014
+_BGR8_PACKED = 0x02180015
 
 
 class CameraKit(Protocol):
@@ -77,6 +83,49 @@ def _check(ret: int, action: str) -> None:
         raise RuntimeError(f"{action} failed: 0x{ret:x}")
 
 
+def to_bgr(raw: np.ndarray, width: int, height: int, pixel_type: int) -> np.ndarray:
+    """Decode one frame using the format the camera is actually streaming."""
+    if pixel_type in {_MONO8, _BAYER_RG8}:
+        size = width * height
+        _require(raw, size, width, height, pixel_type)
+        plane = raw[:size].reshape(height, width)
+        return bayer_to_bgr(plane, "Mono8" if pixel_type == _MONO8 else "BayerRG8")
+    if pixel_type in {_RGB8_PACKED, _BGR8_PACKED}:
+        size = width * height * 3
+        _require(raw, size, width, height, pixel_type)
+        packed = raw[:size].reshape(height, width, 3)
+        # These two arrive in the opposite order to their GenICam names.
+        return (
+            packed
+            if pixel_type == _RGB8_PACKED
+            else cv2.cvtColor(packed, cv2.COLOR_RGB2BGR)
+        )
+    if pixel_type in {_YUV422_YUYV_PACKED, _YUV422_PACKED}:
+        size = width * height * 2
+        _require(raw, size, width, height, pixel_type)
+        packed = raw[:size].reshape(height, width, 2)
+        code = (
+            cv2.COLOR_YUV2BGR_YUYV
+            if pixel_type == _YUV422_YUYV_PACKED
+            else cv2.COLOR_YUV2BGR_UYVY
+        )
+        return cv2.cvtColor(packed, code)
+    raise RuntimeError(
+        f"unsupported camera pixel type 0x{pixel_type:x}; "
+        "select an 8-bit colour or BayerRG8 format on the camera"
+    )
+
+
+def _require(
+    raw: np.ndarray, size: int, width: int, height: int, pixel_type: int
+) -> None:
+    if raw.size < size:
+        raise RuntimeError(
+            f"frame data {raw.size} bytes is smaller than {width}x{height} "
+            f"pixel type 0x{pixel_type:x}"
+        )
+
+
 class MvsCameraKit:
     """Opens, configures, and grabs from one camera through the MVS SDK."""
 
@@ -112,10 +161,10 @@ class MvsCameraKit:
             info = out.stFrameInfo
             data = ctypes.string_at(out.pBufAddr, info.nFrameLen)
             width, height = info.nWidth, info.nHeight
+            pixel_type = info.enPixelType
         finally:
             self._camera.MV_CC_FreeImageBuffer(out)
-        raw = np.frombuffer(data, dtype=np.uint8)
-        return self._to_bgr(raw, width, height)
+        return to_bgr(np.frombuffer(data, dtype=np.uint8), width, height, pixel_type)
 
     def close(self) -> None:
         camera = self._camera
@@ -154,18 +203,9 @@ class MvsCameraKit:
         )
 
     def _configure(self) -> None:
-        sdk = self._sdk
+        """Write exposure and gain only; every other setting comes from MVS."""
         camera = self._camera
         config = self._config
-        # offsets first: many producers reject them once the full ROI is set
-        _check(camera.MV_CC_SetIntValue("OffsetX", config.offset_x), "set OffsetX")
-        _check(camera.MV_CC_SetIntValue("OffsetY", config.offset_y), "set OffsetY")
-        _check(camera.MV_CC_SetIntValue("Width", config.width), "set Width")
-        _check(camera.MV_CC_SetIntValue("Height", config.height), "set Height")
-        _check(
-            camera.MV_CC_SetEnumValueByString("PixelFormat", config.pixel_format),
-            "set PixelFormat",
-        )
         camera.MV_CC_SetEnumValue("ExposureAuto", _EXPOSURE_AUTO_OFF)
         _check(
             camera.MV_CC_SetFloatValue("ExposureTime", float(config.exposure_us)),
@@ -173,29 +213,7 @@ class MvsCameraKit:
         )
         camera.MV_CC_SetEnumValue("GainAuto", _GAIN_AUTO_OFF)
         _check(camera.MV_CC_SetFloatValue("Gain", float(config.gain_db)), "set Gain")
-        _check(
-            camera.MV_CC_SetEnumValue("TriggerMode", sdk.MV_TRIGGER_MODE_OFF),
-            "set TriggerMode",
-        )
-        packet_size = int(camera.MV_CC_GetOptimalPacketSize())
-        if packet_size > 0:
-            if camera.MV_CC_SetIntValue("GevSCPSPacketSize", packet_size) != 0:
-                logger.warning("cannot set packet size %s", packet_size)
         _check(camera.MV_CC_StartGrabbing(), "start grabbing")
-
-    def _to_bgr(self, raw: np.ndarray, width: int, height: int) -> np.ndarray:
-        pixel_format = self._config.pixel_format
-        channels = 1 if pixel_format in {"BayerRG8", "Mono8"} else 3
-        size = width * height * channels
-        if raw.size < size:
-            raise RuntimeError(
-                f"frame data {raw.size} bytes is smaller than "
-                f"{width}x{height} {pixel_format}"
-            )
-        shaped = raw[:size].reshape(
-            (height, width) if channels == 1 else (height, width, channels)
-        )
-        return bayer_to_bgr(shaped, pixel_format)
 
 
 class MvsSource:

@@ -32,12 +32,8 @@ camera:
   source:
     kind: mvs       # HIKROBOT SDK; `gige` uses harvesters over a GenTL producer
     serial: DA9184675  # preferred; `ip` also works; with neither, first GigE camera
-    width: 2048
-    height: 1536
-    pixel_format: BayerRG8
-    exposure_us: 8000 # raise until the bottle is well lit, not clipped
+    exposure_us: 8000  # the runtime writes exposure and gain only
     gain_db: 0.0
-    packet_size: 8192
 ```
 
 `kind: mvs` is the supported path for this camera: the MVS GenTL producer
@@ -48,13 +44,21 @@ on CPython 3.12 (`UnicodeDecodeError` in `Port.url_info_list`). The generic
 `C:/Program Files (x86)/Common Files/MVS/Runtime/Win64_x64/MvProducerGEV.cti`
 (the path differs from the MVS application install directory).
 
+The MVS source deliberately does not change resolution, pixel format,
+triggering, or packet size: set those on the camera in MVS and the runtime
+streams whatever the camera produces. For correct colour, select
+**RGB8Packed** in MVS so the camera applies its own white balance; the runtime
+passes that buffer through as BGR (this producer's packed formats arrive in
+the opposite byte order to their names). `BayerRG8` is decoded too, but without
+white balance, so warm lighting turns it yellow.
+
 `EVIDENCE_DIR` is required by the config loader even though the spike writes no
 evidence:
 
 ```bash
 cd runtime
 export EVIDENCE_DIR=C:/VisiSOP/evidence
-uv sync --extra gige
+uv sync                  # --extra gige only for source.kind: gige
 uv run python -m video_runtime.tools.camera_spike \
   --config config.demo.yaml --frames 100 --save-dir spike/
 ```
