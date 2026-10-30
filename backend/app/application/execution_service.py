@@ -677,6 +677,7 @@ def get_execution(
                         camera_role=event.camera_role,
                         correlation_key=event.correlation_key,
                         accepted=event.accepted,
+                        attributes=dict(event.attributes),
                     )
                     for event in matched
                 ],

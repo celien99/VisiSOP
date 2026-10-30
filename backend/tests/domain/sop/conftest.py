@@ -60,12 +60,15 @@ def event_rule(
     stable_for_ms: int = 0,
     within_ms: int | None = None,
     source_camera_role: str | None = None,
+    attributes: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     condition: dict[str, Any] = {
         "event_type": event_type,
         "min_confidence": min_confidence,
         "stable_for_ms": stable_for_ms,
     }
+    if attributes:
+        condition["attributes"] = attributes
     if within_ms is not None:
         condition["within_ms"] = within_ms
     if source_camera_role is not None:

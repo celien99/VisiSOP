@@ -26,6 +26,7 @@ def matched_to_json(event: MatchedEvent) -> dict[str, Any]:
         "camera_role": event.camera_role,
         "correlation_key": event.correlation_key,
         "accepted": event.accepted,
+        "attributes": dict(event.attributes),
     }
 
 
@@ -39,6 +40,7 @@ def matched_from_json(data: dict[str, Any]) -> MatchedEvent:
         camera_role=data.get("camera_role"),
         correlation_key=data.get("correlation_key"),
         accepted=bool(data.get("accepted", True)),
+        attributes=MappingProxyType(dict(data.get("attributes", {}))),
     )
 
 

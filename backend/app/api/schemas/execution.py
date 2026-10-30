@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
+from typing import Any
 
 from contracts.enums import ReasonCode, ReviewDecision
 from pydantic import BaseModel, Field
@@ -61,6 +62,7 @@ class MatchedEventRead(BaseModel):
     camera_role: str | None
     correlation_key: str | None
     accepted: bool
+    attributes: dict[str, Any] = Field(default_factory=dict)
 
 
 class StepRead(BaseModel):

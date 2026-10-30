@@ -167,6 +167,12 @@ export type MatchedEventRead = {
      * Accepted
      */
     accepted: boolean;
+    /**
+     * Attributes
+     */
+    attributes?: {
+        [key: string]: unknown;
+    };
 };
 
 /**

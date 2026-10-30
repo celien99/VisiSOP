@@ -46,6 +46,7 @@ class MatchedEvent:
     camera_role: str | None = None
     correlation_key: str | None = None
     accepted: bool = True
+    attributes: Mapping[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

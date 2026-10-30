@@ -2,10 +2,12 @@ import dataclasses
 from collections.abc import Mapping
 from datetime import datetime, timedelta
 from types import MappingProxyType
+from typing import Any
 
 from contracts.enums import ProcessingResult, ReasonCode
 from contracts.events import RoutedSOPEvent
 from sop_dsl.schema import (
+    AttributePredicate,
     CompletionSpec,
     EventCondition,
     EventRuleCompletion,
@@ -81,6 +83,7 @@ def _matched_event(event: RoutedSOPEvent, *, accepted: bool) -> MatchedEvent:
         camera_role=event.camera_role,
         correlation_key=event.correlation_key,
         accepted=accepted,
+        attributes=MappingProxyType(dict(event.attributes)),
     )
 
 
@@ -129,10 +132,38 @@ def _conditions_for_event(
     )
 
 
+def _attributes_match(
+    predicates: Mapping[str, AttributePredicate], attributes: Mapping[str, Any]
+) -> bool:
+    for name, predicate in predicates.items():
+        if predicate.exists is not None:
+            if (name in attributes) is not predicate.exists:
+                return False
+            continue
+        if name not in attributes:
+            return False
+        value = attributes[name]
+        if predicate.eq is not None and value != predicate.eq:
+            return False
+        if predicate.in_ is not None and value not in predicate.in_:
+            return False
+        if predicate.gte is not None and not (
+            isinstance(value, (int, float)) and value >= predicate.gte
+        ):
+            return False
+        if predicate.lte is not None and not (
+            isinstance(value, (int, float)) and value <= predicate.lte
+        ):
+            return False
+    return True
+
+
 def _single_event_matches(
     condition: EventCondition, event: MatchedEvent, activated_at: datetime | None
 ) -> bool:
     if event.event_type != condition.event_type:
+        return False
+    if not _attributes_match(condition.attributes, event.attributes):
         return False
     if event.confidence < condition.min_confidence:
         return False
