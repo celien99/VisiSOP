@@ -11,8 +11,8 @@ camera:
     ip: null
     # Only exposure and gain are written; resolution, pixel format, trigger,
     # and packet size stay as configured on the camera in MVS.
-    exposure_us: 20000
-    gain_db: 6.0
+    exposure_us: 8000
+    gain_db: 0.0
 inference_interval_ms: 100
 model:
   onnx_path: models/yolo11n.onnx
@@ -30,13 +30,13 @@ preview:
   fps: 10
 zones:
   - name: pickup
-    rect: [0.68, 0.10, 0.99, 0.95]
+    rect: [0.02, 0.05, 0.49, 0.98]
     classes: [bottle]
     event_type: bottle_in_pickup_zone
     min_confidence: 0.25
     emit_interval_ms: 500
   - name: target
-    rect: [0.08, 0.35, 0.55, 0.95]
+    rect: [0.51, 0.05, 0.99, 0.98]
     classes: [bottle]
     event_type: bottle_in_target_zone
     min_confidence: 0.25
