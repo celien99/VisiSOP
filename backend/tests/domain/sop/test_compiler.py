@@ -13,7 +13,7 @@ def spec_from(data: dict[str, Any]) -> SOPSpec:
 
 def linear_data() -> dict[str, Any]:
     return {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "sop_key": "s",
         "version": 1,
         "name": "S",

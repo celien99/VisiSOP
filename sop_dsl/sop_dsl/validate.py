@@ -1,6 +1,8 @@
 from collections.abc import Collection
 from dataclasses import dataclass
 
+from contracts.catalog import UnknownEventType, get_event_type
+
 from sop_dsl.schema import (
     EventCondition,
     EventRuleCompletion,
@@ -29,6 +31,41 @@ def _event_conditions(step: SOPStepSpec) -> tuple[EventCondition, ...]:
     if isinstance(completion, EventRuleCompletion):
         return (*completion.all, *completion.any, *completion.not_)
     return ()
+
+
+def _attribute_issues(
+    condition: EventCondition, step_key: str
+) -> list[ValidationIssue]:
+    """Check predicate keys and numeric operators against the event schema."""
+    try:
+        spec = get_event_type(condition.event_type)
+    except UnknownEventType:
+        return []
+    fields = spec.attributes_model.model_fields
+    issues: list[ValidationIssue] = []
+    for name, predicate in condition.attributes.items():
+        field = fields.get(name)
+        if field is None:
+            issues.append(
+                ValidationIssue(
+                    "UNKNOWN_ATTRIBUTE",
+                    f"step {step_key!r} predicates on unknown attribute "
+                    f"{name!r} of {condition.event_type!r}",
+                    step_key,
+                )
+            )
+            continue
+        if (
+            predicate.gte is not None or predicate.lte is not None
+        ) and field.annotation not in (int, float):
+            issues.append(
+                ValidationIssue(
+                    "INVALID_ATTRIBUTE_PREDICATE",
+                    f"attribute {name!r} of {condition.event_type!r} is not numeric",
+                    step_key,
+                )
+            )
+    return issues
 
 
 def _unresolved_cycle_keys(
@@ -165,6 +202,8 @@ def validate_spec(
                             step.key,
                         )
                     )
+                else:
+                    issues.extend(_attribute_issues(condition, step.key))
 
     cycle_keys = _unresolved_cycle_keys(steps, known)
     if cycle_keys:

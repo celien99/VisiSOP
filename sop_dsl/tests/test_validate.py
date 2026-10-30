@@ -36,6 +36,49 @@ def test_examples_validate() -> None:
         validate_spec(load(name), known_event_types=KNOWN)
 
 
+def _spec_with_condition(condition: dict[str, object]) -> SOPSpec:
+    return SOPSpec.model_validate(
+        {
+            "schema_version": "2.0",
+            "sop_key": "s",
+            "version": 1,
+            "name": "S",
+            "steps": [
+                {
+                    "key": "a",
+                    "name": "A",
+                    "type": "ACTION",
+                    "completion": {"mode": "EVENT_RULE", "all": [condition]},
+                }
+            ],
+        }
+    )
+
+
+def test_unknown_attribute_is_rejected() -> None:
+    spec = _spec_with_condition(
+        {
+            "event_type": "batteries_installed",
+            "attributes": {"battery_count": {"gte": 2}},
+        }
+    )
+    with pytest.raises(DSLValidationError) as exc:
+        validate_spec(spec, known_event_types={"batteries_installed"})
+    assert any(i.code == "UNKNOWN_ATTRIBUTE" for i in exc.value.issues)
+
+
+def test_numeric_predicate_requires_a_numeric_attribute() -> None:
+    spec = _spec_with_condition(
+        {
+            "event_type": "remote_lid_closed",
+            "attributes": {"state": {"gte": 1}},
+        }
+    )
+    with pytest.raises(DSLValidationError) as exc:
+        validate_spec(spec, known_event_types={"remote_lid_closed"})
+    assert any(i.code == "INVALID_ATTRIBUTE_PREDICATE" for i in exc.value.issues)
+
+
 def test_cycle_is_rejected() -> None:
     spec = load("linear.yaml")
     bad = spec.model_copy(

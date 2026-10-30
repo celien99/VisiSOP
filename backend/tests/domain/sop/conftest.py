@@ -78,7 +78,7 @@ def make_spec(
 ) -> SOPSpec:
     return SOPSpec.model_validate(
         {
-            "schema_version": "1.0",
+            "schema_version": "2.0",
             "sop_key": sop_key,
             "version": version,
             "name": sop_key,

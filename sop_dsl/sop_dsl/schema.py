@@ -2,8 +2,9 @@ from enum import StrEnum
 from typing import Annotated, Any, Literal, Self
 
 from contracts.enums import ReasonCode
-from contracts.version import SUPPORTED_SCHEMA_VERSIONS
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from sop_dsl.version import SUPPORTED_SOP_SCHEMA_VERSIONS
 
 
 class _StrictModel(BaseModel):
@@ -20,12 +21,38 @@ class CompletionMode(StrEnum):
     STATE_RULE = "STATE_RULE"
 
 
+class AttributePredicate(_StrictModel):
+    """Exactly one comparison against an event attribute."""
+
+    eq: Any | None = None
+    in_: tuple[Any, ...] | None = Field(default=None, alias="in")
+    gte: float | None = None
+    lte: float | None = None
+    exists: bool | None = None
+
+    @model_validator(mode="after")
+    def _exactly_one_operator(self) -> Self:
+        operators = (
+            self.eq is not None,
+            self.in_ is not None,
+            self.gte is not None,
+            self.lte is not None,
+            self.exists is not None,
+        )
+        if sum(operators) != 1:
+            raise ValueError(
+                "an attribute predicate needs exactly one of eq, in, gte, lte, exists"
+            )
+        return self
+
+
 class EventCondition(_StrictModel):
     event_type: str
     min_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     stable_for_ms: int = Field(default=0, ge=0)
     within_ms: int | None = Field(default=None, ge=0)
     source_camera_role: str | None = None
+    attributes: dict[str, AttributePredicate] = Field(default_factory=dict)
 
 
 class EventRuleCompletion(_StrictModel):
@@ -123,6 +150,6 @@ class SOPSpec(_StrictModel):
     @field_validator("schema_version")
     @classmethod
     def _supported_version(cls, value: str) -> str:
-        if value not in SUPPORTED_SCHEMA_VERSIONS:
+        if value not in SUPPORTED_SOP_SCHEMA_VERSIONS:
             raise ValueError(f"unsupported schema_version: {value}")
         return value

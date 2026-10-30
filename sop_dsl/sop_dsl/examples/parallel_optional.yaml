@@ -1,4 +1,4 @@
-schema_version: "1.0"
+﻿schema_version: "2.0"
 sop_key: "seat_assembly_parallel"
 version: 1
 name: "座椅并行装配流程"

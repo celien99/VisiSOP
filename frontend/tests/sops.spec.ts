@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test"
 const T = "2026-01-01T12:00:00Z"
 
 const dsl = {
-  schema_version: "1.0",
+  schema_version: "2.0",
   sop_key: "bottle_transfer",
   version: 1,
   name: "瓶体转移演示",

@@ -3,12 +3,12 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from sop_dsl.schema import SOPSpec
+from sop_dsl.schema import AttributePredicate, SOPSpec
 
 
 def valid_spec(**overrides: Any) -> dict[str, Any]:
     data: dict[str, Any] = {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "sop_key": "seat",
         "version": 1,
         "name": "Seat",
@@ -39,6 +39,29 @@ def valid_spec(**overrides: Any) -> dict[str, Any]:
 def test_valid_spec_parses() -> None:
     spec = SOPSpec.model_validate(valid_spec())
     assert spec.steps[0].key == "place_frame"
+
+
+def test_attribute_predicates_parse() -> None:
+    data = valid_spec()
+    condition = data["steps"][0]["completion"]["all"][0]
+    condition["event_type"] = "batteries_installed"
+    condition["attributes"] = {"count": {"gte": 2}, "slots": {"eq": 2}}
+    spec = SOPSpec.model_validate(data)
+    predicates = spec.steps[0].completion.all[0].attributes
+    assert predicates["count"].gte == 2
+    assert predicates["slots"].eq == 2
+
+
+def test_attribute_predicate_needs_exactly_one_operator() -> None:
+    with pytest.raises(ValidationError):
+        AttributePredicate()
+    with pytest.raises(ValidationError):
+        AttributePredicate(eq=1, gte=1)
+
+
+def test_schema_v1_is_rejected() -> None:
+    with pytest.raises(ValidationError):
+        SOPSpec.model_validate(valid_spec(schema_version="1.0"))
 
 
 def test_unknown_field_is_rejected() -> None:
