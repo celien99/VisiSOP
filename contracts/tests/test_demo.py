@@ -18,6 +18,7 @@ PICKUP_ATTRS = {
 def test_demo_event_types_are_registered() -> None:
     spec = get_event_type("bottle_in_pickup_zone")
     assert spec.attributes_model.__name__ == "ZoneObjectAttributes"
+    assert spec.primitive_id == "object_in_zone"
     assert get_event_type("bottle_in_target_zone").schema_version == "1.0"
     attr = validate_attributes("bottle_in_pickup_zone", PICKUP_ATTRS)
     assert attr.model_dump()["zone"] == "pickup"

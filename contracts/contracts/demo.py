@@ -26,6 +26,7 @@ for _event_type in ("bottle_in_pickup_zone", "bottle_in_target_zone"):
         EventTypeSpec(
             event_type=_event_type,
             attributes_model=ZoneObjectAttributes,
+            primitive_id="object_in_zone",
             correlation_key_template=CORRELATION_KEY_TEMPLATE,
             schema_version=SCHEMA_VERSION,
         )

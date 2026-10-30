@@ -19,6 +19,13 @@ from contracts.enums import (
     ReviewDecision,
 )
 from contracts.events import ModelRef, Observation, RoutedSOPEvent, VisionEvent
+from contracts.primitives import (
+    PrimitiveSpec,
+    UnknownPrimitive,
+    get_primitive,
+    primitive_snapshot,
+    register_primitive,
+)
 from contracts.runtime import (
     CameraHealthStatus,
     CameraStatus,
@@ -45,6 +52,7 @@ __all__ = [
     "MessageType",
     "ModelRef",
     "Observation",
+    "PrimitiveSpec",
     "ProcessingResult",
     "ReasonCode",
     "ReviewDecision",
@@ -53,11 +61,15 @@ __all__ = [
     "RuntimeRegistration",
     "RuntimeStatus",
     "UnknownEventType",
+    "UnknownPrimitive",
     "VisionEvent",
     "WebSocketMessage",
     "catalog_snapshot",
     "correlation_key_for",
     "get_event_type",
+    "get_primitive",
+    "primitive_snapshot",
     "register_event_type",
+    "register_primitive",
     "validate_attributes",
 ]
