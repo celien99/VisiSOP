@@ -480,6 +480,8 @@ def activate_model(
     session: Session, *, model_id: str, actor: str, now: datetime
 ) -> ModelArtifact:
     model = get_model(session, model_id)
+    if model.manifest.get("validated") is not True:
+        raise TrainingInvalid("model artifact was not validated")
     active = session.exec(
         select(ModelArtifact).where(
             ModelArtifact.project_id == model.project_id,
@@ -516,7 +518,7 @@ def active_model(
             col(ModelArtifact.active).is_(True),
         )
     ).first()
-    if model is None:
+    if model is None or model.manifest.get("validated") is not True:
         return None
     return project, model
 

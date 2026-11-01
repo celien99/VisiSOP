@@ -117,7 +117,7 @@ def test_training_flow_and_model_activation(
             version=1,
             onnx_key=f"models/{model_id}/best.onnx",
             names_key=f"models/{model_id}/names.txt",
-            manifest={"metrics": {"mAP50": 0.9}},
+            manifest={"metrics": {"mAP50": 0.9}, "validated": True},
             active=False,
             created_at=now,
         )
@@ -151,7 +151,7 @@ def test_training_flow_and_model_activation(
             version=2,
             onnx_key=f"models/{second_id}/best.onnx",
             names_key=f"models/{second_id}/names.txt",
-            manifest={},
+            manifest={"validated": True},
             active=False,
             created_at=now,
         )
@@ -166,6 +166,27 @@ def test_training_flow_and_model_activation(
     by_id = {item["id"]: item for item in models}
     assert by_id[second_id]["active"] is True
     assert by_id[model_id]["active"] is False
+
+    unvalidated_id = str(uuid4())
+    db_session.add(
+        ModelArtifact(
+            id=unvalidated_id,
+            project_id=project["id"],
+            training_job_id=job.json()["id"],
+            version=3,
+            onnx_key=f"models/{unvalidated_id}/best.onnx",
+            names_key=f"models/{unvalidated_id}/names.txt",
+            manifest={},
+            active=False,
+            created_at=now,
+        )
+    )
+    db_session.flush()
+    rejected = client.post(
+        f"/api/training/models/{unvalidated_id}/activate",
+        json={"operator": "tester"},
+    )
+    assert rejected.status_code == 422
 
 
 def test_upload_rejects_unsupported_types(

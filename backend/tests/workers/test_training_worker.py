@@ -73,7 +73,9 @@ def test_successful_job_stores_the_model(
         run.onnx_path.write_bytes(b"onnx")
         run.names_path.write_text("remote\n", encoding="utf-8", newline="\n")
         run.metrics_path.write_text(
-            json.dumps({"metrics": {"mAP50": 0.9}, "names": ["remote"]}),
+            json.dumps(
+                {"metrics": {"mAP50": 0.9}, "names": ["remote"], "valid": True}
+            ),
             encoding="utf-8",
         )
         run.progress_path.write_text(
@@ -100,6 +102,30 @@ def test_successful_job_stores_the_model(
     assert model.active is False
     assert model.manifest["metrics"]["mAP50"] == 0.9
     assert (training_store.root / model.onnx_key).is_file()
+
+
+def test_an_unvalidated_artifact_fails_the_job(
+    db_session, training_store: TrainingStore, now: datetime
+) -> None:
+    job = make_job(db_session, training_store, now)
+
+    def spawn(run) -> Spawned:
+        run.onnx_path.parent.mkdir(parents=True, exist_ok=True)
+        run.onnx_path.write_bytes(b"onnx")
+        run.names_path.write_text("remote\n", encoding="utf-8", newline="\n")
+        run.metrics_path.write_text(
+            json.dumps({"metrics": {}, "names": ["remote"]}), encoding="utf-8"
+        )
+        return Spawned(FakeProcess(0))
+
+    execute_job(db_session, job, store=training_store, spawn=spawn)
+
+    db_session.expire_all()
+    stored = db_session.get(TrainingJob, job.id)
+    assert stored is not None
+    assert stored.status == TrainingJobStatus.FAILED
+    assert "validation" in (stored.error or "")
+    assert db_session.exec(select(ModelArtifact)).all() == []
 
 
 def test_failed_job_records_the_error(

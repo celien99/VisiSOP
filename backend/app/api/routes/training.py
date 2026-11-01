@@ -471,6 +471,8 @@ def activate_training_model(
         )
     except training_service.TrainingNotFound:
         raise HTTPException(status_code=404, detail="model not found") from None
+    except training_service.TrainingInvalid as exc:
+        raise _http(exc) from None
     session.commit()
     return _model_read(model)
 

@@ -78,8 +78,17 @@ def _metrics(trainer: Any) -> dict[str, float]:
     return values
 
 
+def _validate_onnx(path: Path) -> None:
+    import onnxruntime
+
+    onnxruntime.InferenceSession(str(path), providers=["CPUExecutionProvider"])
+
+
 def run_training(
-    spec: TrainSpec, *, model_factory: Callable[[str], Any] | None = None
+    spec: TrainSpec,
+    *,
+    model_factory: Callable[[str], Any] | None = None,
+    validator: Callable[[Path], None] | None = None,
 ) -> dict[str, Any]:
     if model_factory is None:
         try:
@@ -134,6 +143,8 @@ def run_training(
     exported = model.export(format="onnx", opset=17, imgsz=spec.imgsz, simplify=False)
     spec.onnx_path.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(str(exported), spec.onnx_path)
+    # Activation must never point at an artifact the runtime cannot load.
+    (validator or _validate_onnx)(spec.onnx_path)
 
     trainer = getattr(model, "trainer", None)
     metrics = _metrics(trainer)
@@ -142,6 +153,7 @@ def run_training(
         "metrics": metrics,
         "epochs": spec.epochs,
         "names": ordered,
+        "valid": True,
     }
     _write_json(spec.metrics_path, payload)
     _write_json(

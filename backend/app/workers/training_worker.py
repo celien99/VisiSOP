@@ -159,10 +159,20 @@ def execute_job(
             spawned.log_handle.close()
 
     _mirror_progress(session, job, run)
-    if code == 0 and run.onnx_path.is_file() and run.names_path.is_file():
-        _succeed(session, job, run, store)
+    payload = _read_json(run.metrics_path)
+    valid = (
+        code == 0
+        and payload.get("valid") is True
+        and run.onnx_path.is_file()
+        and run.names_path.is_file()
+    )
+    if valid:
+        _succeed(session, job, run, store, payload)
     else:
-        _fail(job, run, code)
+        reason = (
+            f"trainer exited with code {code}" if code else "artifact validation failed"
+        )
+        _fail(job, run, reason)
     session.commit()
 
 
@@ -191,9 +201,12 @@ def _mirror_progress(session: Session, job: TrainingJob, run: TrainingRun) -> No
 
 
 def _succeed(
-    session: Session, job: TrainingJob, run: TrainingRun, store: TrainingStore
+    session: Session,
+    job: TrainingJob,
+    run: TrainingRun,
+    store: TrainingStore,
+    payload: dict[str, Any],
 ) -> None:
-    payload = _read_json(run.metrics_path)
     metrics = payload.get("metrics", {})
     names = payload.get("names", [])
     last = session.exec(
@@ -209,7 +222,12 @@ def _succeed(
         version=version,
         onnx_key=_relative(run.onnx_path, store),
         names_key=_relative(run.names_path, store),
-        manifest={"metrics": metrics, "names": names, "epochs": job.epochs},
+        manifest={
+            "metrics": metrics,
+            "names": names,
+            "epochs": job.epochs,
+            "validated": True,
+        },
         active=False,
         created_at=_now(),
     )
@@ -223,11 +241,11 @@ def _succeed(
     job.finished_at = _now()
 
 
-def _fail(job: TrainingJob, run: TrainingRun, code: int) -> None:
+def _fail(job: TrainingJob, run: TrainingRun, reason: str) -> None:
     job.status = TrainingJobStatus.FAILED
     job.finished_at = _now()
     if not job.error:
-        job.error = f"trainer exited with code {code}"
+        job.error = reason
     tail = _log_tail(run.log_path)
     if tail:
         job.error = f"{job.error}: {tail}"
