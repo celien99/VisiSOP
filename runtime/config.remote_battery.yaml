@@ -1,0 +1,71 @@
+runtime_id: runtime-01
+station_id: st-01
+camera:
+  camera_id: cam-01
+  role: overview
+  source:
+    kind: mvs
+    serial: DA9184675
+    ip: null
+    exposure_us: 8000
+    gain_db: 0.0
+inference_interval_ms: 100
+model:
+  onnx_path: models/remote_battery.onnx
+  class_names_path: models/remote_battery.names
+  input_size: 640
+  confidence: 0.25
+  iou: 0.45
+backend:
+  base_url: http://127.0.0.1:8000/api
+  timeout_ms: 2000
+  retries: 3
+preview:
+  host: 127.0.0.1
+  port: 8001
+  fps: 10
+  overlay: all
+bindings:
+  - event_type: remote_present
+    primitive: object_present
+    params:
+      object_class: remote
+      zone: battery_bench
+      rect: [0.10, 0.10, 0.90, 0.90]
+      min_conf: 0.5
+    emit_interval_ms: 500
+  - event_type: batteries_installed
+    primitive: count_threshold
+    params:
+      object_class: battery
+      compartment: remote
+      roi: [0.20, 0.20, 0.80, 0.80]
+      slots: 2
+      min_conf: 0.5
+    emit_interval_ms: 500
+  - event_type: battery_orientation_ok
+    primitive: orientation_match
+    params:
+      object_class: battery
+      compartment: remote
+      roi: [0.20, 0.20, 0.80, 0.80]
+      correct_class: CORRECT
+      reversed_class: REVERSED
+      min_conf: 0.5
+    emit_interval_ms: 500
+  - event_type: remote_lid_closed
+    primitive: state_classify
+    params:
+      roi: [0.10, 0.10, 0.90, 0.90]
+      states: [OPEN, CLOSED]
+      min_conf: 0.5
+    emit_interval_ms: 500
+  - event_type: operator_hand_clear
+    primitive: object_absent
+    params:
+      object_class: hand
+      zone: battery_bench
+      rect: [0.05, 0.05, 0.95, 0.95]
+      frames: 3
+      min_conf: 0.25
+    emit_interval_ms: 500

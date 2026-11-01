@@ -1,0 +1,15 @@
+name: remote_battery
+version: 1
+status: untrained
+classes: [remote, battery, CORRECT, REVERSED, OPEN, CLOSED, hand]
+trained_on: null
+calibration_version: null
+event_metrics:
+  precision: null
+  recall: null
+  latency_p95_ms: null
+  false_completions: null
+notes: >
+  Fill this manifest after the first training run and keep the ONNX artifact
+  out of git. The runtime reads the model path and class names from
+  config.remote_battery.yaml, not from this file.

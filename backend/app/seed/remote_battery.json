@@ -1,0 +1,84 @@
+{
+  "schema_version": "2.0",
+  "sop_key": "remote_battery",
+  "version": 1,
+  "name": "遥控器装电池",
+  "steps": [
+    {
+      "key": "place_remote",
+      "name": "放置遥控器",
+      "type": "ACTION",
+      "timeout_ms": 300000,
+      "completion": {
+        "mode": "EVENT_RULE",
+        "all": [
+          {
+            "event_type": "remote_present",
+            "min_confidence": 0.9,
+            "stable_for_ms": 500,
+            "attributes": {"zone": {"eq": "battery_bench"}}
+          }
+        ]
+      },
+      "evidence": {"required": true, "kind": "keyframe"}
+    },
+    {
+      "key": "insert_batteries",
+      "name": "装入两节电池",
+      "type": "ACTION",
+      "depends_on": ["place_remote"],
+      "timeout_ms": 300000,
+      "completion": {
+        "mode": "EVENT_RULE",
+        "all": [
+          {
+            "event_type": "batteries_installed",
+            "min_confidence": 0.9,
+            "stable_for_ms": 500,
+            "attributes": {"count": {"gte": 2}, "slots": {"eq": 2}}
+          },
+          {
+            "event_type": "battery_orientation_ok",
+            "min_confidence": 0.9,
+            "stable_for_ms": 500,
+            "attributes": {"orientation": {"eq": "CORRECT"}}
+          }
+        ]
+      },
+      "evidence": {"required": true, "kind": "keyframe"}
+    },
+    {
+      "key": "close_lid",
+      "name": "合上盖子并移开手",
+      "type": "ACTION",
+      "depends_on": ["insert_batteries"],
+      "timeout_ms": 300000,
+      "completion": {
+        "mode": "EVENT_RULE",
+        "all": [
+          {
+            "event_type": "remote_lid_closed",
+            "min_confidence": 0.9,
+            "stable_for_ms": 500,
+            "attributes": {"state": {"eq": "CLOSED"}}
+          },
+          {
+            "event_type": "operator_hand_clear",
+            "min_confidence": 0.9,
+            "stable_for_ms": 800,
+            "attributes": {"present": {"eq": false}}
+          }
+        ]
+      },
+      "evidence": {"required": true, "kind": "keyframe"}
+    },
+    {
+      "key": "verify",
+      "name": "确认完成",
+      "type": "CHECKPOINT",
+      "depends_on": ["close_lid"],
+      "timeout_ms": 5000,
+      "completion": {"mode": "STATE_RULE", "all_steps_completed": ["close_lid"]}
+    }
+  ]
+}
