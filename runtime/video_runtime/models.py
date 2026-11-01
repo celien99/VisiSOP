@@ -96,9 +96,7 @@ class ModelManager:
         classes = [str(name) for name in data.get("classes", [])]
         missing = sorted(set(self._required_classes) - set(classes))
         if missing:
-            self._last_error = (
-                f"model {model_id} is missing binding classes: {missing}"
-            )
+            self._last_error = f"model {model_id} is missing binding classes: {missing}"
             logger.error(self._last_error)
             return False
         with self._lock:
