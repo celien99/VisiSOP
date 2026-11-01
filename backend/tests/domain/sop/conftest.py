@@ -104,6 +104,7 @@ def make_event(
     occurred_at: datetime = T0,
     camera_role: str | None = None,
     attributes: dict[str, Any] | None = None,
+    confidence_semantics: str = "calibrated",
 ) -> RoutedSOPEvent:
     return RoutedSOPEvent(
         schema_version="1.0",
@@ -118,6 +119,7 @@ def make_event(
         confidence=confidence,
         model=ModelRef(name="test", version="1"),
         attributes=attributes or {},
+        confidence_semantics=confidence_semantics,
         execution_id="e",
         resolution_method="ACTIVE_EXECUTION_WINDOW",
         resolved_at=occurred_at,

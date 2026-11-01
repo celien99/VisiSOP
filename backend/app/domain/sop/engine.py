@@ -84,6 +84,7 @@ def _matched_event(event: RoutedSOPEvent, *, accepted: bool) -> MatchedEvent:
         correlation_key=event.correlation_key,
         accepted=accepted,
         attributes=MappingProxyType(dict(event.attributes)),
+        confidence_semantics=event.confidence_semantics,
     )
 
 
@@ -665,6 +666,37 @@ def apply(
             (*step_state.matched_events, matched),
             step_state.activated_at,
         ):
+            continue
+
+        uncalibrated = matched.confidence_semantics == "uncalibrated" or any(
+            prior.confidence_semantics == "uncalibrated"
+            for prior in step_state.matched_events
+        )
+        if uncalibrated:
+            steps[key] = dataclasses.replace(
+                step_state,
+                status=StepStatus.NEEDS_REVIEW,
+                reason_code=ReasonCode.LOW_CONFIDENCE,
+            )
+            transitions.append(
+                StepTransition(
+                    step_key=key,
+                    from_status=step_state.status,
+                    to_status=StepStatus.NEEDS_REVIEW,
+                    reason_code=ReasonCode.LOW_CONFIDENCE,
+                    matched_event_ids=(event.event_id,),
+                    detail="uncalibrated events require review",
+                )
+            )
+            alarms.append(
+                _alarm(
+                    ReasonCode.LOW_CONFIDENCE,
+                    event,
+                    key,
+                    category="VISION_QUALITY",
+                    severity="MEDIUM",
+                )
+            )
             continue
 
         steps[key] = dataclasses.replace(step_state, status=StepStatus.COMPLETED)

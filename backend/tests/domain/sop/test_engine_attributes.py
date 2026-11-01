@@ -4,6 +4,7 @@ from typing import Any
 from app.application.state_codec import matched_from_json, matched_to_json
 from app.domain.sop.engine import apply, initial_state
 from app.domain.sop.model import MatchedEvent, StepStatus
+from contracts.enums import ReasonCode
 from tests.domain.sop.conftest import (
     T0,
     event_rule,
@@ -86,6 +87,34 @@ def test_stable_window_still_applies_with_attributes() -> None:
         transition.to_status is not StepStatus.COMPLETED
         for transition in after_first.step_transitions
     )
+
+
+def test_an_uncalibrated_event_forces_review() -> None:
+    graph = _graph({})
+    event = make_event(
+        "batteries_installed",
+        attributes={"compartment": "remote", "count": 2, "slots": 2},
+        confidence_semantics="uncalibrated",
+    )
+    result = apply(graph, initial_state(graph, "e", T0), event, T0)
+
+    assert result.step_transitions[0].to_status is StepStatus.NEEDS_REVIEW
+    assert result.step_transitions[0].reason_code is ReasonCode.LOW_CONFIDENCE
+    assert any(
+        alarm.reason_code is ReasonCode.LOW_CONFIDENCE for alarm in result.alarms
+    )
+
+
+def test_a_deterministic_event_completes_normally() -> None:
+    graph = _graph({})
+    event = make_event(
+        "batteries_installed",
+        attributes={"compartment": "remote", "count": 2, "slots": 2},
+        confidence_semantics="deterministic",
+    )
+    result = apply(graph, initial_state(graph, "e", T0), event, T0)
+
+    assert result.step_transitions[0].to_status is StepStatus.COMPLETED
 
 
 def test_matched_attributes_round_trip_through_the_state_codec() -> None:

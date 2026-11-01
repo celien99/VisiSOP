@@ -2,7 +2,12 @@ import dataclasses
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from contracts.catalog import InvalidAttributes, UnknownEventType, validate_attributes
+from contracts.catalog import (
+    InvalidAttributes,
+    UnknownEventType,
+    get_event_type,
+    validate_attributes,
+)
 from contracts.enums import ProcessingResult, ReasonCode
 from contracts.events import RoutedSOPEvent, VisionEvent
 from sqlmodel import Session, col, select
@@ -385,6 +390,9 @@ def _apply_resolved(
     state = state_from_rows(execution, list(rows.values()), graph)
     payload = event.model_dump()
     payload["execution_id"] = execution.id
+    payload["confidence_semantics"] = get_event_type(
+        event.event_type
+    ).confidence_semantics
     routed = RoutedSOPEvent(
         **payload,
         resolution_method=resolution.method,

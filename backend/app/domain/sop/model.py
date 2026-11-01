@@ -47,6 +47,7 @@ class MatchedEvent:
     correlation_key: str | None = None
     accepted: bool = True
     attributes: Mapping[str, Any] = field(default_factory=dict)
+    confidence_semantics: str = "calibrated"
 
 
 @dataclass(frozen=True)

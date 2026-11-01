@@ -27,6 +27,7 @@ def matched_to_json(event: MatchedEvent) -> dict[str, Any]:
         "correlation_key": event.correlation_key,
         "accepted": event.accepted,
         "attributes": dict(event.attributes),
+        "confidence_semantics": event.confidence_semantics,
     }
 
 
@@ -41,6 +42,7 @@ def matched_from_json(data: dict[str, Any]) -> MatchedEvent:
         correlation_key=data.get("correlation_key"),
         accepted=bool(data.get("accepted", True)),
         attributes=MappingProxyType(dict(data.get("attributes", {}))),
+        confidence_semantics=str(data.get("confidence_semantics", "calibrated")),
     )
 
 

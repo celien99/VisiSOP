@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
 
@@ -64,6 +64,9 @@ class VisionEvent(_VersionedModel):
 class RoutedSOPEvent(VisionEvent):
     # Re-declared without a default: the resolver always knows the execution.
     execution_id: str
+    confidence_semantics: Literal[
+        "calibrated", "deterministic", "uncalibrated"
+    ] = "calibrated"
     resolution_method: str
     resolved_at: AwareDatetime
     resolver_rule_version: str
