@@ -95,6 +95,7 @@ class BindingConfig(_ConfigModel):
     primitive: str
     params: dict[str, Any]
     emit_interval_ms: int = Field(default=500, ge=0)
+    heartbeat_ms: int = Field(default=2000, ge=0)
     evidence: bool = True
 
     @model_validator(mode="after")

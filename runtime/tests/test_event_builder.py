@@ -59,13 +59,18 @@ def test_emits_one_event_per_binding_per_interval(tmp_path) -> None:
     )
     third_perception = replace(
         perception,
-        frame=replace(frame, frame_seq=3, captured_at=T + timedelta(milliseconds=600)),
+        frame=replace(
+            frame, frame_seq=3, captured_at=T + timedelta(milliseconds=2100)
+        ),
     )
     third = builder.build(
-        third_perception.frame, third_perception, now=T + timedelta(milliseconds=600)
+        third_perception.frame,
+        third_perception,
+        now=T + timedelta(milliseconds=2100),
     )
 
     assert len(first) == 1 and second == [] and len(third) == 1
+    assert third[0].evidence_refs == ()
     event = first[0]
     assert event.event_type == "bottle_in_pickup_zone"
     assert event.primitive_id == "object_in_zone"
@@ -76,6 +81,78 @@ def test_emits_one_event_per_binding_per_interval(tmp_path) -> None:
     assert event.correlation_key == "st-01:pickup:bottle"
     assert event.attributes["zone"] == "pickup"
     assert (tmp_path / event.evidence_refs[0]).exists()
+
+
+def test_changed_observations_emit_and_heartbeats_do_not_write_evidence(
+    tmp_path,
+) -> None:
+    binding = binding_from_config(
+        BindingConfig(
+            event_type="batteries_installed",
+            primitive="count_threshold",
+            params={
+                "object_class": "battery",
+                "compartment": "remote",
+                "roi": (0.0, 0.0, 1.0, 1.0),
+                "slots": 2,
+            },
+        )
+    )
+    builder = make_builder(tmp_path, bindings=[binding])
+    one = (make_detection("battery", 0.9, (0.1, 0.1, 0.2, 0.2)),)
+    two = (
+        *one,
+        make_detection("battery", 0.8, (0.3, 0.3, 0.4, 0.4)),
+    )
+
+    first = builder.build(make_frame(seq=1, at=T), make_perception(one), now=T)
+    assert first[0].attributes["count"] == 1
+    assert first[0].evidence_refs
+
+    suppressed = builder.build(
+        make_frame(seq=2, at=T + timedelta(milliseconds=100)),
+        make_perception(one),
+        now=T + timedelta(milliseconds=100),
+    )
+    assert suppressed == []
+
+    changed = builder.build(
+        make_frame(seq=3, at=T + timedelta(milliseconds=600)),
+        make_perception(two),
+        now=T + timedelta(milliseconds=600),
+    )
+    assert changed[0].attributes["count"] == 2
+    assert changed[0].evidence_refs
+
+    heartbeat = builder.build(
+        make_frame(seq=4, at=T + timedelta(milliseconds=2600)),
+        make_perception(two),
+        now=T + timedelta(milliseconds=2600),
+    )
+    assert heartbeat[0].attributes["count"] == 2
+    assert heartbeat[0].evidence_refs == ()
+
+
+def test_reentry_after_an_empty_frame_emits_again(tmp_path) -> None:
+    builder = make_builder(tmp_path)
+    detection = make_detection()
+
+    first = builder.build(make_frame(seq=1, at=T), make_perception((detection,)), now=T)
+    assert len(first) == 1 and first[0].evidence_refs
+
+    empty = builder.build(
+        make_frame(seq=2, at=T + timedelta(milliseconds=100)),
+        make_perception(()),
+        now=T + timedelta(milliseconds=100),
+    )
+    assert empty == []
+
+    again = builder.build(
+        make_frame(seq=3, at=T + timedelta(milliseconds=600)),
+        make_perception((detection,)),
+        now=T + timedelta(milliseconds=600),
+    )
+    assert len(again) == 1 and again[0].evidence_refs
 
 
 def test_two_bindings_get_two_events_with_their_own_evidence(tmp_path) -> None:

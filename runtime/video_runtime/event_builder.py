@@ -4,6 +4,7 @@ import logging
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 import contracts.demo  # noqa: F401  (registers the bottle demo event types)
@@ -32,6 +33,7 @@ class EventBinding:
     params: BaseModel
     params_hash: str
     emit_interval_ms: int = 500
+    heartbeat_ms: int = 2000
     evidence: bool = True
 
 
@@ -48,8 +50,19 @@ def binding_from_config(config: BindingConfig) -> EventBinding:
         params=params,
         params_hash=params_hash,
         emit_interval_ms=config.emit_interval_ms,
+        heartbeat_ms=config.heartbeat_ms,
         evidence=config.evidence,
     )
+
+
+def _signature(attributes: dict[str, Any]) -> str:
+    """Stable observation identity; the moving box and track id are noise."""
+    stable = {
+        key: value
+        for key, value in attributes.items()
+        if key not in {"bbox", "track_id"}
+    }
+    return json.dumps(stable, sort_keys=True, default=str)
 
 
 class EventBuilder:
@@ -73,6 +86,7 @@ class EventBuilder:
         self._writer = writer
         self._bindings = tuple(bindings)
         self._last_emitted: dict[int, datetime] = {}
+        self._last_signature: dict[int, str | None] = {}
 
     def build(
         self,
@@ -86,12 +100,27 @@ class EventBuilder:
         for index, binding in enumerate(self._bindings):
             spec = get_event_type(binding.event_type)
             primitive = get_primitive(spec.primitive_id)
-            for observation in binding.primitive.evaluate(perception, binding.params):
+            observations = binding.primitive.evaluate(perception, binding.params)
+            if not observations:
+                self._last_signature[index] = None
+                continue
+            for observation in observations:
+                signature = _signature(observation.attributes)
+                changed = self._last_signature.get(index) != signature
                 last = self._last_emitted.get(index)
+                elapsed_ms = (
+                    (frame.captured_at - last).total_seconds() * 1000
+                    if last is not None
+                    else None
+                )
                 if (
-                    last is not None
-                    and (frame.captured_at - last).total_seconds() * 1000
-                    < binding.emit_interval_ms
+                    changed
+                    and elapsed_ms is not None
+                    and elapsed_ms < binding.emit_interval_ms
+                ):
+                    continue
+                if not changed and (
+                    elapsed_ms is None or elapsed_ms < binding.heartbeat_ms
                 ):
                     continue
 
@@ -103,7 +132,7 @@ class EventBuilder:
                 validate_attributes(binding.event_type, attributes)
                 event_id = str(event_id_factory())
                 evidence_refs: tuple[str, ...] = ()
-                if binding.evidence:
+                if binding.evidence and changed:
                     try:
                         evidence_refs = (
                             self._writer.write(
@@ -151,4 +180,5 @@ class EventBuilder:
                     )
                 )
                 self._last_emitted[index] = frame.captured_at
+                self._last_signature[index] = signature
         return events
