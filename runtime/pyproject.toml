@@ -17,6 +17,7 @@ dependencies = [
 
 [project.optional-dependencies]
 gige = ["harvesters>=1.4.0"]
+train = ["ultralytics[export]>=8.3"]
 
 [dependency-groups]
 dev = [
@@ -42,7 +43,7 @@ python_version = "3.12"
 
 [[tool.mypy.overrides]]
 # neither ships stubs or py.typed; they are hardware/vendor boundaries
-module = ["harvesters.*", "onnxruntime"]
+module = ["harvesters.*", "onnxruntime", "ultralytics.*", "torch.*"]
 ignore_missing_imports = true
 
 [tool.ruff]

@@ -13,6 +13,7 @@ from app.api.main import api_router
 from app.application.outbox_dispatcher import run_outbox_dispatcher
 from app.core.config import settings
 from app.workers.timeout_worker import run_timeout_worker
+from app.workers.training_worker import run_training_worker
 
 FRONTEND_DIR = Path(__file__).parent / "frontend"
 
@@ -28,6 +29,8 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     if settings.WORKERS_ENABLED:
         tasks.append(asyncio.create_task(run_outbox_dispatcher()))
         tasks.append(asyncio.create_task(run_timeout_worker()))
+        if settings.TRAINING_ENABLED:
+            tasks.append(asyncio.create_task(run_training_worker()))
     try:
         yield
     finally:
