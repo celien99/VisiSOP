@@ -15,6 +15,7 @@ import { Route as LayoutAnalyticsRouteImport } from './routes/_layout/analytics'
 import { Route as LayoutRecordsRouteImport } from './routes/_layout/records'
 import { Route as LayoutSopsRouteImport } from './routes/_layout/sops'
 import { Route as LayoutSystemRouteImport } from './routes/_layout/system'
+import { Route as LayoutTrainingRouteImport } from './routes/_layout/training'
 import { Route as LayoutExecutionsExecutionIdRouteImport } from './routes/_layout/executions.$executionId'
 import { Route as LayoutStationsIndexRouteImport } from './routes/_layout/stations.index'
 import { Route as LayoutStationsStationIdRouteImport } from './routes/_layout/stations.$stationId'
@@ -48,6 +49,11 @@ const LayoutSystemRoute = LayoutSystemRouteImport.update({
   path: '/system',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutTrainingRoute = LayoutTrainingRouteImport.update({
+  id: '/training',
+  path: '/training',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutExecutionsExecutionIdRoute =
   LayoutExecutionsExecutionIdRouteImport.update({
     id: '/executions/$executionId',
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/records': typeof LayoutRecordsRoute
   '/sops': typeof LayoutSopsRoute
   '/system': typeof LayoutSystemRoute
+  '/training': typeof LayoutTrainingRoute
   '/executions/$executionId': typeof LayoutExecutionsExecutionIdRoute
   '/stations/$stationId': typeof LayoutStationsStationIdRoute
   '/stations/': typeof LayoutStationsIndexRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/records': typeof LayoutRecordsRoute
   '/sops': typeof LayoutSopsRoute
   '/system': typeof LayoutSystemRoute
+  '/training': typeof LayoutTrainingRoute
   '/': typeof LayoutIndexRoute
   '/executions/$executionId': typeof LayoutExecutionsExecutionIdRoute
   '/stations/$stationId': typeof LayoutStationsStationIdRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/_layout/records': typeof LayoutRecordsRoute
   '/_layout/sops': typeof LayoutSopsRoute
   '/_layout/system': typeof LayoutSystemRoute
+  '/_layout/training': typeof LayoutTrainingRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/executions/$executionId': typeof LayoutExecutionsExecutionIdRoute
   '/_layout/stations/$stationId': typeof LayoutStationsStationIdRoute
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/records'
     | '/sops'
     | '/system'
+    | '/training'
     | '/executions/$executionId'
     | '/stations/$stationId'
     | '/stations/'
@@ -114,6 +124,7 @@ export interface FileRouteTypes {
     | '/records'
     | '/sops'
     | '/system'
+    | '/training'
     | '/'
     | '/executions/$executionId'
     | '/stations/$stationId'
@@ -125,6 +136,7 @@ export interface FileRouteTypes {
     | '/_layout/records'
     | '/_layout/sops'
     | '/_layout/system'
+    | '/_layout/training'
     | '/_layout/'
     | '/_layout/executions/$executionId'
     | '/_layout/stations/$stationId'
@@ -179,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSystemRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/training': {
+      id: '/_layout/training'
+      path: '/training'
+      fullPath: '/training'
+      preLoaderRoute: typeof LayoutTrainingRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/executions/$executionId': {
       id: '/_layout/executions/$executionId'
       path: '/executions/$executionId'
@@ -208,6 +227,7 @@ interface LayoutRouteChildren {
   LayoutRecordsRoute: typeof LayoutRecordsRoute
   LayoutSopsRoute: typeof LayoutSopsRoute
   LayoutSystemRoute: typeof LayoutSystemRoute
+  LayoutTrainingRoute: typeof LayoutTrainingRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutExecutionsExecutionIdRoute: typeof LayoutExecutionsExecutionIdRoute
   LayoutStationsStationIdRoute: typeof LayoutStationsStationIdRoute
@@ -219,6 +239,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutRecordsRoute: LayoutRecordsRoute,
   LayoutSopsRoute: LayoutSopsRoute,
   LayoutSystemRoute: LayoutSystemRoute,
+  LayoutTrainingRoute: LayoutTrainingRoute,
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutExecutionsExecutionIdRoute: LayoutExecutionsExecutionIdRoute,
   LayoutStationsStationIdRoute: LayoutStationsStationIdRoute,

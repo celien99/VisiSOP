@@ -7,8 +7,10 @@ backend/app/frontend/
 /blob-report/
 /playwright/.cache/
 .playwright-mcp/
+frontend/.tanstack/
 .taste-skill/
 .claude-flow/
 .swarm/
 # agent scratch (superpowers plan ledgers)
 .superpowers/
+.env

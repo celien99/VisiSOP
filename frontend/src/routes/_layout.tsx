@@ -13,6 +13,7 @@ const NAV = [
   { to: "/analytics", label: "看板" },
   { to: "/records", label: "记录" },
   { to: "/sops", label: "标准" },
+  { to: "/training", label: "训练" },
 ] as const
 
 const clockFormat = new Intl.DateTimeFormat("zh-CN", {

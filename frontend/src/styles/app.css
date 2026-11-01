@@ -906,3 +906,164 @@
     font-size: var(--vs-text-meta);
   }
 }
+
+@layer components {
+  .vs-training {
+    display: grid;
+    grid-template-columns: 16rem minmax(0, 1fr);
+    gap: var(--vs-space-5);
+    padding: var(--vs-space-5);
+    align-items: start;
+  }
+  .vs-training__projects {
+    border: var(--vs-hairline) solid var(--vs-line);
+    background: var(--vs-surface);
+    padding: var(--vs-space-4);
+  }
+  .vs-training__title {
+    font-size: var(--vs-text-display);
+    margin-bottom: var(--vs-space-2);
+  }
+  .vs-training__create {
+    display: grid;
+    gap: var(--vs-space-2);
+    margin: var(--vs-space-3) 0;
+  }
+  .vs-training__list {
+    display: grid;
+    gap: var(--vs-space-1);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .vs-training__project,
+  .vs-training__video {
+    display: grid;
+    gap: var(--vs-space-1);
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: var(--vs-hairline) solid transparent;
+    padding: var(--vs-space-2);
+    color: inherit;
+    cursor: pointer;
+  }
+  .vs-training__project[data-active],
+  .vs-training__video[data-active] {
+    border-color: var(--vs-ink);
+  }
+  .vs-training__workspace {
+    min-width: 0;
+  }
+  .vs-training__sections {
+    display: grid;
+    gap: var(--vs-space-4);
+  }
+  .vs-training__section {
+    border: var(--vs-hairline) solid var(--vs-line);
+    background: var(--vs-surface);
+    padding: var(--vs-space-4);
+  }
+  .vs-training__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--vs-space-3);
+    margin: var(--vs-space-3) 0;
+  }
+  .vs-training__upload {
+    cursor: pointer;
+  }
+  .vs-frame-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+    gap: var(--vs-space-2);
+    margin-top: var(--vs-space-3);
+  }
+  .vs-frame {
+    display: grid;
+    gap: var(--vs-space-1);
+    background: none;
+    border: var(--vs-hairline) solid var(--vs-line);
+    padding: var(--vs-space-1);
+    color: var(--vs-ink-secondary);
+    font-size: var(--vs-text-micro);
+    cursor: pointer;
+  }
+  .vs-frame[data-selected] {
+    border-color: var(--vs-ink);
+  }
+  .vs-frame img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+  }
+  .vs-labeler__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--vs-space-3);
+    margin-bottom: var(--vs-space-3);
+  }
+  .vs-labeler__canvas {
+    position: relative;
+    max-width: 48rem;
+    border: var(--vs-hairline) solid var(--vs-line);
+    cursor: crosshair;
+    touch-action: none;
+  }
+  .vs-labeler__canvas img {
+    display: block;
+    width: 100%;
+    user-select: none;
+  }
+  .vs-labeler__canvas svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .vs-labeler__canvas rect {
+    fill: transparent;
+    stroke: var(--vs-ink);
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+  }
+  .vs-labeler__canvas text {
+    fill: var(--vs-ink);
+    stroke: none;
+    font-size: var(--vs-text-micro);
+  }
+  .vs-boxes {
+    list-style: none;
+    margin: var(--vs-space-3) 0 0;
+    padding: 0;
+    display: grid;
+    gap: var(--vs-space-1);
+  }
+  .vs-boxes li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--vs-space-3);
+    border-bottom: var(--vs-hairline) solid var(--vs-line);
+    padding: var(--vs-space-1) 0;
+    font-size: var(--vs-text-meta);
+  }
+  .vs-progress {
+    height: 0.375rem;
+    border: var(--vs-hairline) solid var(--vs-line);
+    margin-top: var(--vs-space-1);
+  }
+  .vs-progress > span {
+    display: block;
+    height: 100%;
+    background: var(--vs-ink);
+  }
+  @media (max-width: 900px) {
+    .vs-training {
+      grid-template-columns: 1fr;
+    }
+  }
+}

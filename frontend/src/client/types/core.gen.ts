@@ -5,6 +5,232 @@ export type ClientOptions = {
 };
 
 /**
+ * ActivationRequest
+ */
+export type ActivationRequest = {
+    /**
+     * Operator
+     */
+    operator: string;
+};
+
+/**
+ * ActiveModelRead
+ */
+export type ActiveModelRead = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Project Key
+     */
+    project_key: string;
+    /**
+     * Version
+     */
+    version: number;
+    /**
+     * Classes
+     */
+    classes: Array<string>;
+    /**
+     * Metrics
+     */
+    metrics: {
+        [key: string]: unknown;
+    };
+    /**
+     * Onnx Url
+     */
+    onnx_url: string;
+    /**
+     * Names Url
+     */
+    names_url: string;
+};
+
+/**
+ * AnnotationInput
+ */
+export type AnnotationInput = {
+    /**
+     * Class Name
+     */
+    class_name: string;
+    /**
+     * X1
+     */
+    x1: number;
+    /**
+     * Y1
+     */
+    y1: number;
+    /**
+     * X2
+     */
+    x2: number;
+    /**
+     * Y2
+     */
+    y2: number;
+};
+
+/**
+ * AnnotationRead
+ */
+export type AnnotationRead = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Frame Id
+     */
+    frame_id: string;
+    /**
+     * Class Name
+     */
+    class_name: string;
+    /**
+     * X1
+     */
+    x1: number;
+    /**
+     * Y1
+     */
+    y1: number;
+    /**
+     * X2
+     */
+    x2: number;
+    /**
+     * Y2
+     */
+    y2: number;
+};
+
+/**
+ * AnnotationsUpdate
+ */
+export type AnnotationsUpdate = {
+    /**
+     * Annotations
+     */
+    annotations?: Array<AnnotationInput>;
+};
+
+/**
+ * Body_training-upload_training_video
+ */
+export type Body_training_upload_training_video = {
+    /**
+     * File
+     */
+    file: Blob | File;
+};
+
+/**
+ * DatasetCreate
+ */
+export type DatasetCreate = {
+    /**
+     * Val Ratio
+     */
+    val_ratio?: number;
+};
+
+/**
+ * DatasetRead
+ */
+export type DatasetRead = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Version
+     */
+    version: number;
+    /**
+     * Frame Count
+     */
+    frame_count: number;
+    /**
+     * Train Count
+     */
+    train_count: number;
+    /**
+     * Val Count
+     */
+    val_count: number;
+    /**
+     * Storage Key
+     */
+    storage_key: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
+ * ExtractRequest
+ */
+export type ExtractRequest = {
+    /**
+     * Fps
+     */
+    fps?: number;
+    /**
+     * Max Frames
+     */
+    max_frames?: number;
+};
+
+/**
+ * FrameRead
+ */
+export type FrameRead = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Video Id
+     */
+    video_id: string;
+    /**
+     * Frame Index
+     */
+    frame_index: number;
+    /**
+     * Timestamp Ms
+     */
+    timestamp_ms: number;
+    /**
+     * Width
+     */
+    width: number;
+    /**
+     * Height
+     */
+    height: number;
+    /**
+     * Image Url
+     */
+    image_url: string;
+    /**
+     * Thumb Url
+     */
+    thumb_url: string;
+    /**
+     * Annotation Count
+     */
+    annotation_count: number;
+};
+
+/**
  * HTTPValidationError
  */
 export type HTTPValidationError = {
@@ -15,9 +241,199 @@ export type HTTPValidationError = {
 };
 
 /**
+ * JobCreate
+ */
+export type JobCreate = {
+    /**
+     * Dataset Version Id
+     */
+    dataset_version_id: string;
+    /**
+     * Epochs
+     */
+    epochs?: number;
+};
+
+/**
+ * JobRead
+ */
+export type JobRead = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Project Id
+     */
+    project_id: string;
+    /**
+     * Dataset Version Id
+     */
+    dataset_version_id: string;
+    status: TrainingJobStatus;
+    /**
+     * Progress
+     */
+    progress: number;
+    /**
+     * Epochs
+     */
+    epochs: number;
+    /**
+     * Metrics
+     */
+    metrics: {
+        [key: string]: unknown;
+    };
+    /**
+     * Error
+     */
+    error: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Started At
+     */
+    started_at: string | null;
+    /**
+     * Finished At
+     */
+    finished_at: string | null;
+};
+
+/**
+ * ModelRead
+ */
+export type ModelRead = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Project Id
+     */
+    project_id: string;
+    /**
+     * Version
+     */
+    version: number;
+    /**
+     * Training Job Id
+     */
+    training_job_id: string;
+    /**
+     * Metrics
+     */
+    metrics: {
+        [key: string]: unknown;
+    };
+    /**
+     * Manifest
+     */
+    manifest: {
+        [key: string]: unknown;
+    };
+    /**
+     * Active
+     */
+    active: boolean;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Artifact Url
+     */
+    artifact_url: string;
+    /**
+     * Names Url
+     */
+    names_url: string;
+};
+
+/**
  * ProcessStatus
  */
 export type ProcessStatus = 'IDLE' | 'RUNNING' | 'REVIEW' | 'ALARM' | 'COMPLETED' | 'OFFLINE';
+
+/**
+ * ProjectCreate
+ */
+export type ProjectCreate = {
+    /**
+     * Key
+     */
+    key: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Classes
+     */
+    classes: Array<string>;
+};
+
+/**
+ * ProjectRead
+ */
+export type ProjectRead = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Key
+     */
+    key: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Classes
+     */
+    classes: Array<string>;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
+ * StatsRead
+ */
+export type StatsRead = {
+    /**
+     * Videos
+     */
+    videos: number;
+    /**
+     * Frames
+     */
+    frames: number;
+    /**
+     * Labeled Frames
+     */
+    labeled_frames: number;
+    /**
+     * Annotations
+     */
+    annotations: number;
+    /**
+     * Per Class
+     */
+    per_class: {
+        [key: string]: number;
+    };
+};
+
+/**
+ * TrainingJobStatus
+ */
+export type TrainingJobStatus = 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
 
 /**
  * ValidationError
@@ -45,4 +461,699 @@ export type ValidationError = {
     ctx?: {
         [key: string]: unknown;
     };
+};
+
+/**
+ * VideoRead
+ */
+export type VideoRead = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Project Id
+     */
+    project_id: string;
+    /**
+     * Filename
+     */
+    filename: string;
+    status: VideoStatus;
+    /**
+     * Duration Ms
+     */
+    duration_ms: number | null;
+    /**
+     * Fps
+     */
+    fps: number | null;
+    /**
+     * Frame Count
+     */
+    frame_count: number;
+    /**
+     * Error
+     */
+    error: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
+ * VideoStatus
+ */
+export type VideoStatus = 'UPLOADED' | 'READY' | 'FAILED';
+
+export type trainingListTrainingProjectsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/training/projects';
+};
+
+export type trainingListTrainingProjectsResponses = {
+    /**
+     * Response Training-List Training Projects
+     *
+     * Successful Response
+     */
+    200: Array<ProjectRead>;
+};
+
+export type trainingListTrainingProjectsResponse = trainingListTrainingProjectsResponses[keyof trainingListTrainingProjectsResponses];
+
+export type trainingCreateTrainingProjectData = {
+    body: ProjectCreate;
+    path?: never;
+    query?: never;
+    url: '/api/training/projects';
+};
+
+export type trainingCreateTrainingProjectErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingCreateTrainingProjectError = trainingCreateTrainingProjectErrors[keyof trainingCreateTrainingProjectErrors];
+
+export type trainingCreateTrainingProjectResponses = {
+    /**
+     * Successful Response
+     */
+    201: ProjectRead;
+};
+
+export type trainingCreateTrainingProjectResponse = trainingCreateTrainingProjectResponses[keyof trainingCreateTrainingProjectResponses];
+
+export type trainingGetTrainingProjectData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/training/projects/{project_id}';
+};
+
+export type trainingGetTrainingProjectErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingGetTrainingProjectError = trainingGetTrainingProjectErrors[keyof trainingGetTrainingProjectErrors];
+
+export type trainingGetTrainingProjectResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProjectRead;
+};
+
+export type trainingGetTrainingProjectResponse = trainingGetTrainingProjectResponses[keyof trainingGetTrainingProjectResponses];
+
+export type trainingListTrainingVideosData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/training/projects/{project_id}/videos';
+};
+
+export type trainingListTrainingVideosErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingListTrainingVideosError = trainingListTrainingVideosErrors[keyof trainingListTrainingVideosErrors];
+
+export type trainingListTrainingVideosResponses = {
+    /**
+     * Response Training-List Training Videos
+     *
+     * Successful Response
+     */
+    200: Array<VideoRead>;
+};
+
+export type trainingListTrainingVideosResponse = trainingListTrainingVideosResponses[keyof trainingListTrainingVideosResponses];
+
+export type trainingUploadTrainingVideoData = {
+    body: Body_training_upload_training_video;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/training/projects/{project_id}/videos';
+};
+
+export type trainingUploadTrainingVideoErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingUploadTrainingVideoError = trainingUploadTrainingVideoErrors[keyof trainingUploadTrainingVideoErrors];
+
+export type trainingUploadTrainingVideoResponses = {
+    /**
+     * Successful Response
+     */
+    201: VideoRead;
+};
+
+export type trainingUploadTrainingVideoResponse = trainingUploadTrainingVideoResponses[keyof trainingUploadTrainingVideoResponses];
+
+export type trainingExtractTrainingVideoData = {
+    body: ExtractRequest;
+    path: {
+        /**
+         * Video Id
+         */
+        video_id: string;
+    };
+    query?: never;
+    url: '/api/training/videos/{video_id}/extract';
+};
+
+export type trainingExtractTrainingVideoErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingExtractTrainingVideoError = trainingExtractTrainingVideoErrors[keyof trainingExtractTrainingVideoErrors];
+
+export type trainingExtractTrainingVideoResponses = {
+    /**
+     * Response Training-Extract Training Video
+     *
+     * Successful Response
+     */
+    200: Array<FrameRead>;
+};
+
+export type trainingExtractTrainingVideoResponse = trainingExtractTrainingVideoResponses[keyof trainingExtractTrainingVideoResponses];
+
+export type trainingListTrainingFramesData = {
+    body?: never;
+    path: {
+        /**
+         * Video Id
+         */
+        video_id: string;
+    };
+    query?: never;
+    url: '/api/training/videos/{video_id}/frames';
+};
+
+export type trainingListTrainingFramesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingListTrainingFramesError = trainingListTrainingFramesErrors[keyof trainingListTrainingFramesErrors];
+
+export type trainingListTrainingFramesResponses = {
+    /**
+     * Response Training-List Training Frames
+     *
+     * Successful Response
+     */
+    200: Array<FrameRead>;
+};
+
+export type trainingListTrainingFramesResponse = trainingListTrainingFramesResponses[keyof trainingListTrainingFramesResponses];
+
+export type trainingGetTrainingFrameData = {
+    body?: never;
+    path: {
+        /**
+         * Frame Id
+         */
+        frame_id: string;
+    };
+    query?: never;
+    url: '/api/training/frames/{frame_id}';
+};
+
+export type trainingGetTrainingFrameErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingGetTrainingFrameError = trainingGetTrainingFrameErrors[keyof trainingGetTrainingFrameErrors];
+
+export type trainingGetTrainingFrameResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type trainingGetTrainingFrameThumbData = {
+    body?: never;
+    path: {
+        /**
+         * Frame Id
+         */
+        frame_id: string;
+    };
+    query?: never;
+    url: '/api/training/frames/{frame_id}/thumb';
+};
+
+export type trainingGetTrainingFrameThumbErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingGetTrainingFrameThumbError = trainingGetTrainingFrameThumbErrors[keyof trainingGetTrainingFrameThumbErrors];
+
+export type trainingGetTrainingFrameThumbResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type trainingListFrameAnnotationsData = {
+    body?: never;
+    path: {
+        /**
+         * Frame Id
+         */
+        frame_id: string;
+    };
+    query?: never;
+    url: '/api/training/frames/{frame_id}/annotations';
+};
+
+export type trainingListFrameAnnotationsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingListFrameAnnotationsError = trainingListFrameAnnotationsErrors[keyof trainingListFrameAnnotationsErrors];
+
+export type trainingListFrameAnnotationsResponses = {
+    /**
+     * Response Training-List Frame Annotations
+     *
+     * Successful Response
+     */
+    200: Array<AnnotationRead>;
+};
+
+export type trainingListFrameAnnotationsResponse = trainingListFrameAnnotationsResponses[keyof trainingListFrameAnnotationsResponses];
+
+export type trainingReplaceFrameAnnotationsData = {
+    body: AnnotationsUpdate;
+    path: {
+        /**
+         * Frame Id
+         */
+        frame_id: string;
+    };
+    query?: never;
+    url: '/api/training/frames/{frame_id}/annotations';
+};
+
+export type trainingReplaceFrameAnnotationsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingReplaceFrameAnnotationsError = trainingReplaceFrameAnnotationsErrors[keyof trainingReplaceFrameAnnotationsErrors];
+
+export type trainingReplaceFrameAnnotationsResponses = {
+    /**
+     * Response Training-Replace Frame Annotations
+     *
+     * Successful Response
+     */
+    200: Array<AnnotationRead>;
+};
+
+export type trainingReplaceFrameAnnotationsResponse = trainingReplaceFrameAnnotationsResponses[keyof trainingReplaceFrameAnnotationsResponses];
+
+export type trainingGetTrainingStatsData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/training/projects/{project_id}/stats';
+};
+
+export type trainingGetTrainingStatsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingGetTrainingStatsError = trainingGetTrainingStatsErrors[keyof trainingGetTrainingStatsErrors];
+
+export type trainingGetTrainingStatsResponses = {
+    /**
+     * Successful Response
+     */
+    200: StatsRead;
+};
+
+export type trainingGetTrainingStatsResponse = trainingGetTrainingStatsResponses[keyof trainingGetTrainingStatsResponses];
+
+export type trainingListTrainingDatasetsData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/training/projects/{project_id}/datasets';
+};
+
+export type trainingListTrainingDatasetsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingListTrainingDatasetsError = trainingListTrainingDatasetsErrors[keyof trainingListTrainingDatasetsErrors];
+
+export type trainingListTrainingDatasetsResponses = {
+    /**
+     * Response Training-List Training Datasets
+     *
+     * Successful Response
+     */
+    200: Array<DatasetRead>;
+};
+
+export type trainingListTrainingDatasetsResponse = trainingListTrainingDatasetsResponses[keyof trainingListTrainingDatasetsResponses];
+
+export type trainingCreateTrainingDatasetData = {
+    body: DatasetCreate;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/training/projects/{project_id}/datasets';
+};
+
+export type trainingCreateTrainingDatasetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingCreateTrainingDatasetError = trainingCreateTrainingDatasetErrors[keyof trainingCreateTrainingDatasetErrors];
+
+export type trainingCreateTrainingDatasetResponses = {
+    /**
+     * Successful Response
+     */
+    201: DatasetRead;
+};
+
+export type trainingCreateTrainingDatasetResponse = trainingCreateTrainingDatasetResponses[keyof trainingCreateTrainingDatasetResponses];
+
+export type trainingListTrainingJobsData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/training/projects/{project_id}/jobs';
+};
+
+export type trainingListTrainingJobsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingListTrainingJobsError = trainingListTrainingJobsErrors[keyof trainingListTrainingJobsErrors];
+
+export type trainingListTrainingJobsResponses = {
+    /**
+     * Response Training-List Training Jobs
+     *
+     * Successful Response
+     */
+    200: Array<JobRead>;
+};
+
+export type trainingListTrainingJobsResponse = trainingListTrainingJobsResponses[keyof trainingListTrainingJobsResponses];
+
+export type trainingCreateTrainingJobData = {
+    body: JobCreate;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/training/projects/{project_id}/jobs';
+};
+
+export type trainingCreateTrainingJobErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingCreateTrainingJobError = trainingCreateTrainingJobErrors[keyof trainingCreateTrainingJobErrors];
+
+export type trainingCreateTrainingJobResponses = {
+    /**
+     * Successful Response
+     */
+    201: JobRead;
+};
+
+export type trainingCreateTrainingJobResponse = trainingCreateTrainingJobResponses[keyof trainingCreateTrainingJobResponses];
+
+export type trainingGetTrainingJobData = {
+    body?: never;
+    path: {
+        /**
+         * Job Id
+         */
+        job_id: string;
+    };
+    query?: never;
+    url: '/api/training/jobs/{job_id}';
+};
+
+export type trainingGetTrainingJobErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingGetTrainingJobError = trainingGetTrainingJobErrors[keyof trainingGetTrainingJobErrors];
+
+export type trainingGetTrainingJobResponses = {
+    /**
+     * Successful Response
+     */
+    200: JobRead;
+};
+
+export type trainingGetTrainingJobResponse = trainingGetTrainingJobResponses[keyof trainingGetTrainingJobResponses];
+
+export type trainingListTrainingModelsData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/training/projects/{project_id}/models';
+};
+
+export type trainingListTrainingModelsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingListTrainingModelsError = trainingListTrainingModelsErrors[keyof trainingListTrainingModelsErrors];
+
+export type trainingListTrainingModelsResponses = {
+    /**
+     * Response Training-List Training Models
+     *
+     * Successful Response
+     */
+    200: Array<ModelRead>;
+};
+
+export type trainingListTrainingModelsResponse = trainingListTrainingModelsResponses[keyof trainingListTrainingModelsResponses];
+
+export type trainingActivateTrainingModelData = {
+    body: ActivationRequest;
+    path: {
+        /**
+         * Model Id
+         */
+        model_id: string;
+    };
+    query?: never;
+    url: '/api/training/models/{model_id}/activate';
+};
+
+export type trainingActivateTrainingModelErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingActivateTrainingModelError = trainingActivateTrainingModelErrors[keyof trainingActivateTrainingModelErrors];
+
+export type trainingActivateTrainingModelResponses = {
+    /**
+     * Successful Response
+     */
+    200: ModelRead;
+};
+
+export type trainingActivateTrainingModelResponse = trainingActivateTrainingModelResponses[keyof trainingActivateTrainingModelResponses];
+
+export type trainingGetActiveModelData = {
+    body?: never;
+    path: {
+        /**
+         * Project Key
+         */
+        project_key: string;
+    };
+    query?: never;
+    url: '/api/training/projects/{project_key}/active-model';
+};
+
+export type trainingGetActiveModelErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingGetActiveModelError = trainingGetActiveModelErrors[keyof trainingGetActiveModelErrors];
+
+export type trainingGetActiveModelResponses = {
+    /**
+     * Successful Response
+     */
+    200: ActiveModelRead;
+};
+
+export type trainingGetActiveModelResponse = trainingGetActiveModelResponses[keyof trainingGetActiveModelResponses];
+
+export type trainingDownloadModelArtifactData = {
+    body?: never;
+    path: {
+        /**
+         * Model Id
+         */
+        model_id: string;
+    };
+    query?: never;
+    url: '/api/training/models/{model_id}/artifact';
+};
+
+export type trainingDownloadModelArtifactErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingDownloadModelArtifactError = trainingDownloadModelArtifactErrors[keyof trainingDownloadModelArtifactErrors];
+
+export type trainingDownloadModelArtifactResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type trainingDownloadModelNamesData = {
+    body?: never;
+    path: {
+        /**
+         * Model Id
+         */
+        model_id: string;
+    };
+    query?: never;
+    url: '/api/training/models/{model_id}/names';
+};
+
+export type trainingDownloadModelNamesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingDownloadModelNamesError = trainingDownloadModelNamesErrors[keyof trainingDownloadModelNamesErrors];
+
+export type trainingDownloadModelNamesResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
 };
