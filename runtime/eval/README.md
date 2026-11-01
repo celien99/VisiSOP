@@ -38,6 +38,23 @@ classifier head can replace them later without changing the event contract.
    battery, lid left open, hand blocking the compartment. 3 operators × 10
    runs is the minimum acceptance set.
 
+## GPU (RTX 4060 and similar)
+
+`uv sync --extra train` installs the default CPU torch build. After the
+first sync, replace it with the CUDA build matching the installed driver
+(cu124 here) and verify:
+
+```bash
+cd runtime
+uv sync --extra train
+uv pip install --index-url https://download.pytorch.org/whl/cu124 torch torchvision
+uv run python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0))"
+```
+
+The trainer resolves `TRAINING_DEVICE` (default `0`) to `cpu` when CUDA is
+unavailable and records the resolved device in `metrics.json` and the model
+manifest, so a CPU run is visible rather than silent.
+
 ## Model handoff
 
 Train YOLO11n on the labelled set, export ONNX (opset 17, `imgsz=640`, no NMS),

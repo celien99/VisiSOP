@@ -117,15 +117,22 @@ def run_training(
     if callable(add_callback):
         add_callback("on_train_epoch_end", on_epoch)
 
+    resolved_device = _resolved_device(spec.device)
     _write_json(
         spec.progress_path,
-        {"status": "RUNNING", "epoch": 0, "epochs": spec.epochs, "metrics": {}},
+        {
+            "status": "RUNNING",
+            "epoch": 0,
+            "epochs": spec.epochs,
+            "metrics": {},
+            "device": resolved_device,
+        },
     )
     model.train(
         data=str(spec.data_yaml),
         epochs=spec.epochs,
         imgsz=spec.imgsz,
-        device=_resolved_device(spec.device),
+        device=resolved_device,
         project=str(spec.output_dir),
         name="train",
         exist_ok=True,
@@ -154,6 +161,7 @@ def run_training(
         "epochs": spec.epochs,
         "names": ordered,
         "valid": True,
+        "device": resolved_device,
     }
     _write_json(spec.metrics_path, payload)
     _write_json(
@@ -163,6 +171,7 @@ def run_training(
             "epoch": spec.epochs,
             "epochs": spec.epochs,
             "metrics": metrics,
+            "device": resolved_device,
         },
     )
     return payload

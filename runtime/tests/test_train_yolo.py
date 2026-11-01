@@ -68,5 +68,6 @@ def test_run_training_exports_the_artifacts(tmp_path) -> None:
     ]
     assert payload["metrics"]["metrics/mAP50(B)"] == 0.8
     assert payload["valid"] is True
+    assert payload["device"] in {"cpu", "0"}
     progress = json.loads(spec.progress_path.read_text(encoding="utf-8"))
     assert progress["status"] == "SUCCEEDED"
