@@ -25,7 +25,19 @@ const execution = {
       reason_code: "EVIDENCE_MISSING",
       activated_at: T,
       deadline_at: "2026-01-01T12:01:00Z",
-      matched_events: [],
+      matched_events: [
+        {
+          event_id: "evt-1",
+          event_type: "batteries_installed",
+          confidence: 0.95,
+          occurred_at: T,
+          camera_id: "cam-01",
+          camera_role: null,
+          correlation_key: null,
+          accepted: true,
+          attributes: { compartment: "remote", count: 2, slots: 2 },
+        },
+      ],
       evidence: [
         {
           id: "ev-1",
@@ -165,6 +177,16 @@ test("review is offered only for NEEDS_REVIEW and sends the operator and reason"
     reason: "人工确认放置完成",
     decision: "MARK_COMPLETED",
   })
+})
+
+test("decisive event attributes are shown as visual facts", async ({
+  page,
+}) => {
+  await page.goto("/executions/e1")
+  await expect(page.getByTestId("fact-visual")).toContainText(
+    "compartment=remote",
+  )
+  await expect(page.getByTestId("fact-visual")).toContainText("count=2")
 })
 
 test("unverified evidence is explicitly unavailable", async ({ page }) => {

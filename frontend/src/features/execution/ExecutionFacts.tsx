@@ -19,6 +19,13 @@ const EVIDENCE_LABEL: Record<string, string> = {
   MISSING: "缺失",
 }
 
+function formatAttributes(attributes: Record<string, unknown>): string {
+  return Object.entries(attributes)
+    .filter(([key]) => key !== "bbox")
+    .map(([key, value]) => `${key}=${String(value)}`)
+    .join(" · ")
+}
+
 type ExecutionFactsProps = {
   execution: ExecutionDetailRead | null
   system: StationRuntimeStateRead | null
@@ -50,15 +57,26 @@ export function ExecutionFacts({
           <p className="vs-empty">暂无视觉事件</p>
         ) : (
           <ul className="vs-rows">
-            {events.map((event) => (
-              <li className="vs-row" key={event.event_id}>
-                <span className="vs-row__main">{event.event_type}</span>
-                <span className="vs-row__meta">
-                  置信度 {event.confidence.toFixed(2)} · {event.camera_id} ·{" "}
-                  {formatTime(event.occurred_at)}
-                </span>
-              </li>
-            ))}
+            {events.map((event) => {
+              const attributes = formatAttributes(event.attributes ?? {})
+              return (
+                <li className="vs-row" key={event.event_id}>
+                  <span className="vs-row__main">{event.event_type}</span>
+                  <span className="vs-row__meta">
+                    置信度 {event.confidence.toFixed(2)} · {event.camera_id} ·{" "}
+                    {formatTime(event.occurred_at)}
+                  </span>
+                  {attributes ? (
+                    <span
+                      className="vs-row__meta"
+                      data-testid="event-attributes"
+                    >
+                      {attributes}
+                    </span>
+                  ) : null}
+                </li>
+              )
+            })}
           </ul>
         )}
       </section>

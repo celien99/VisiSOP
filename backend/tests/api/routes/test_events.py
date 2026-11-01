@@ -58,6 +58,46 @@ def test_assign_rejects_a_non_quarantined_event(
     assert response.status_code == 409
 
 
+def test_execution_detail_exposes_matched_event_attributes(
+    client: TestClient,
+    active_execution: ExecutionDetailRead,
+    make_zone_event,
+    now: datetime,
+) -> None:
+    for event_id, at in (
+        ("a1", now),
+        ("a2", now + timedelta(milliseconds=600)),
+    ):
+        event = make_zone_event(event_id, "pickup", at)
+        assert client.post(
+            "/api/events", json=event.model_dump(mode="json")
+        ).json()["result"] == "ACCEPTED"
+
+    detail = client.get(f"/api/executions/{active_execution.id}").json()
+    pick = next(step for step in detail["steps"] if step["key"] == "pick_bottle")
+    assert pick["status"] == "COMPLETED"
+    assert any(
+        event["attributes"].get("zone") == "pickup"
+        for event in pick["matched_events"]
+    )
+
+
+def test_invalid_attributes_are_rejected(
+    client: TestClient,
+    active_execution: ExecutionDetailRead,
+    event_payload: dict[str, object],
+) -> None:
+    payload = dict(event_payload)
+    payload["attributes"] = {
+        "object_class": "bottle",
+        "zone": "pickup",
+        "bbox": [0.1, 0.2, 0.3],
+    }
+    response = client.post("/api/events", json=payload)
+    assert response.status_code == 202
+    assert response.json()["result"] == "REJECTED"
+
+
 def test_happy_path_completes_the_execution_over_http(
     client: TestClient,
     active_execution: ExecutionDetailRead,
