@@ -13,16 +13,29 @@ from app.models.sop import (
     SopVersionStatus,
 )
 from app.models.station import Camera, Station, StationCameraBinding
+from app.models.training import (
+    DatasetVersion,
+    ModelArtifact,
+    TrainingAnnotation,
+    TrainingFrame,
+    TrainingJob,
+    TrainingJobStatus,
+    TrainingProject,
+    TrainingVideo,
+    VideoStatus,
+)
 
 __all__ = [
     "SQLModel",
     "Alarm",
     "AuditRecord",
     "Camera",
+    "DatasetVersion",
     "EventEvidenceLink",
     "EventProcessingReceipt",
     "EvidenceAsset",
     "EvidenceStatus",
+    "ModelArtifact",
     "OutboxMessage",
     "RuntimeHealthEvent",
     "SOPDefinition",
@@ -34,5 +47,12 @@ __all__ = [
     "Station",
     "StationCameraBinding",
     "StepExecution",
+    "TrainingAnnotation",
+    "TrainingFrame",
+    "TrainingJob",
+    "TrainingJobStatus",
+    "TrainingProject",
+    "TrainingVideo",
+    "VideoStatus",
     "VisionEventRow",
 ]

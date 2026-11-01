@@ -10,6 +10,7 @@ from app.api.routes import (
     runtimes,
     sops,
     stations,
+    training,
     utils,
     ws,
 )
@@ -25,4 +26,5 @@ api_router.include_router(evidence.router)
 api_router.include_router(events.router)
 api_router.include_router(alarms.router)
 api_router.include_router(health.router)
+api_router.include_router(training.router)
 api_router.include_router(ws.router)

@@ -22,6 +22,14 @@ class Settings(BaseSettings):
     OUTBOX_POLL_MS: int = 200
     TIMEOUT_POLL_MS: int = 1000
     WORKERS_ENABLED: bool = True
+    TRAINING_DIR: Path = Path("../training")
+    TRAINING_ENABLED: bool = True
+    TRAINING_EPOCHS: int = 50
+    TRAINING_IMGSZ: int = 640
+    TRAINING_DEVICE: str = "0"
+    TRAINING_POLL_MS: int = 2000
+    MODEL_POLL_S: int = 10
+    MAX_VIDEO_MB: int = 512
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
