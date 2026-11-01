@@ -7,6 +7,7 @@ from pathlib import Path
 
 import uvicorn
 from contracts.catalog import catalog_snapshot
+from contracts.events import ModelRef
 from contracts.runtime import RuntimeHeartbeat, RuntimeRegistration
 
 from video_runtime import __version__
@@ -14,6 +15,7 @@ from video_runtime.config import BindingConfig, RuntimeConfig, load_config
 from video_runtime.event_builder import EventBuilder, binding_from_config
 from video_runtime.evidence import EvidenceWriter
 from video_runtime.inference.onnx_yolo import OnnxYoloBackend
+from video_runtime.models import ModelManager, ModelProvider, StaticModelProvider
 from video_runtime.perception import BBox, IoUTracker
 from video_runtime.pipeline import Pipeline
 from video_runtime.publisher import HttpEventPublisher
@@ -63,7 +65,12 @@ def main(argv: list[str] | None = None) -> int:
         target=registrar.run_forever, args=(stop_event,), daemon=True
     ).start()
 
-    pipeline = build_pipeline(config, state, publisher)
+    provider, class_names = build_provider(config)
+    if isinstance(provider, ModelManager):
+        threading.Thread(
+            target=provider.run_poller, args=(stop_event,), daemon=True
+        ).start()
+    pipeline = build_pipeline(config, state, publisher, provider, class_names)
     for handled in (signal.SIGINT, signal.SIGTERM):
         signal.signal(handled, _stopper(pipeline, stop_event))
 
@@ -95,6 +102,8 @@ def preflight(config: RuntimeConfig, class_names: list[str]) -> None:
             raise SystemExit(
                 f"binding uses unregistered event type {binding.event_type!r}"
             )
+        if not known_classes:
+            continue
         for key in ("object_class", "correct_class", "reversed_class"):
             value = binding.params.get(key)
             if isinstance(value, str) and value not in known_classes:
@@ -122,18 +131,53 @@ def _binding_regions(
     return tuple(regions)
 
 
-def build_pipeline(
-    config: RuntimeConfig, state: RuntimeState, publisher: HttpEventPublisher
-) -> Pipeline:
-    class_names = config.model.class_names_path.read_text(encoding="utf-8").splitlines()
-    preflight(config, class_names)
-    inference = OnnxYoloBackend(
-        config.model.onnx_path,
+def build_provider(
+    config: RuntimeConfig,
+) -> tuple[ModelProvider, list[str]]:
+    model = config.model
+
+    def factory(onnx_path: Path, names: list[str]) -> OnnxYoloBackend:
+        return OnnxYoloBackend(
+            onnx_path,
+            names,
+            input_size=model.input_size,
+            conf_threshold=model.confidence,
+            iou_threshold=model.iou,
+        )
+
+    if model.source == "backend":
+        if model.project_key is None:
+            raise SystemExit("model.project_key is required for the backend source")
+        manager = ModelManager(
+            config.backend.base_url,
+            model.project_key,
+            cache_dir=model.onnx_path.parent / "active",
+            backend_factory=factory,
+            poll_s=model.poll_s,
+        )
+        try:
+            manager.refresh()
+        except Exception as exc:  # network boundary: the poller keeps retrying
+            logger.warning("no active model yet: %s", exc)
+        return manager, list(manager.classes())
+    class_names = model.class_names_path.read_text(encoding="utf-8").splitlines()
+    backend = factory(model.onnx_path, class_names)
+    provider = StaticModelProvider(
+        backend,
+        ModelRef(name=model.onnx_path.stem, version="1"),
         class_names,
-        input_size=config.model.input_size,
-        conf_threshold=config.model.confidence,
-        iou_threshold=config.model.iou,
     )
+    return provider, class_names
+
+
+def build_pipeline(
+    config: RuntimeConfig,
+    state: RuntimeState,
+    publisher: HttpEventPublisher,
+    provider: ModelProvider,
+    class_names: list[str],
+) -> Pipeline:
+    preflight(config, class_names)
     builder = EventBuilder(
         config.station_id,
         config.camera.camera_id,
@@ -145,7 +189,7 @@ def build_pipeline(
     )
     return Pipeline(
         build_source(config.camera.source, config.camera.camera_id),
-        inference,
+        provider,
         IoUTracker(),
         builder,
         publisher,

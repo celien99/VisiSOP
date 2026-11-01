@@ -131,9 +131,7 @@ def run_training(
     spec.names_path.parent.mkdir(parents=True, exist_ok=True)
     spec.names_path.write_text("\n".join(ordered) + "\n", encoding="utf-8")
 
-    exported = model.export(
-        format="onnx", opset=17, imgsz=spec.imgsz, simplify=False
-    )
+    exported = model.export(format="onnx", opset=17, imgsz=spec.imgsz, simplify=False)
     spec.onnx_path.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(str(exported), spec.onnx_path)
 

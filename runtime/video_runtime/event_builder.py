@@ -80,6 +80,7 @@ class EventBuilder:
         perception: Perception,
         now: datetime,
         event_id_factory: EventIdFactory = uuid4,
+        model_ref: ModelRef | None = None,
     ) -> list[VisionEvent]:
         events: list[VisionEvent] = []
         for index, binding in enumerate(self._bindings):
@@ -133,9 +134,8 @@ class EventBuilder:
                         emitted_at=now,
                         frame_seq=frame.frame_seq,
                         confidence=observation.confidence,
-                        model=ModelRef(
-                            name=self._model_name, version=self._model_version
-                        ),
+                        model=model_ref
+                        or ModelRef(name=self._model_name, version=self._model_version),
                         primitive_id=primitive.primitive_id,
                         primitive_version=primitive.version,
                         binding_id=binding.binding_id,

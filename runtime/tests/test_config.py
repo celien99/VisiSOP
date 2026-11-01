@@ -99,6 +99,34 @@ def test_load_config_parses_the_mvs_source(tmp_path, monkeypatch) -> None:
     assert source.gain_db == 0.0
 
 
+def test_backend_model_source_requires_a_project_key(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("EVIDENCE_DIR", str(tmp_path))
+    path = tmp_path / "demo.yaml"
+    path.write_text(
+        FILE_CONFIG.replace(
+            "model:\n  onnx_path: models/yolo11n.onnx\n  class_names_path: models/coco.names",
+            "model:\n  source: backend\n  onnx_path: models/yolo11n.onnx\n"
+            "  class_names_path: models/coco.names",
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValidationError):
+        load_config(path)
+
+    path.write_text(
+        FILE_CONFIG.replace(
+            "model:\n  onnx_path: models/yolo11n.onnx\n  class_names_path: models/coco.names",
+            "model:\n  source: backend\n  project_key: remote\n"
+            "  onnx_path: models/yolo11n.onnx\n"
+            "  class_names_path: models/coco.names",
+        ),
+        encoding="utf-8",
+    )
+    config = load_config(path)
+    assert config.model.source == "backend"
+    assert config.model.project_key == "remote"
+
+
 def test_binding_primitive_must_match_the_event_type(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("EVIDENCE_DIR", str(tmp_path))
     path = tmp_path / "demo.yaml"

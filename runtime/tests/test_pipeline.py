@@ -4,6 +4,7 @@ from datetime import timedelta
 
 import cv2
 from conftest import T, make_detection, make_frame
+from contracts.events import ModelRef
 from contracts.runtime import HealthStatus
 
 from video_runtime.config import BindingConfig
@@ -41,6 +42,12 @@ class FakeInference:
 
     def infer(self, frame: object) -> list[Detection]:
         return self._detections
+
+    def current_ref(self) -> ModelRef:
+        return ModelRef(name="test-model", version="1")
+
+    def classes(self) -> tuple[str, ...]:
+        return ("bottle",)
 
     def close(self) -> None:
         self.closed = True

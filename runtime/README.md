@@ -24,6 +24,11 @@ triggering, and packet size are whatever MVS configured on the camera. Frames
 are decoded from the type reported in each frame (RGB8Packed, BGR8Packed,
 YUV422, Mono8, BayerRG8).
 
+`model.source: backend` makes the runtime pull the project's active model from
+`GET /api/training/projects/{key}/active-model` every `model.poll_s` seconds
+and hot-swap the ONNX backend; events keep the active model version. The
+default `file` source loads the configured ONNX once.
+
 Detection is primitive-based: one shared detection pass per camera feeds
 stateful primitives (`object_in_zone`, `object_present`, `object_absent`,
 `count_threshold`, `state_classify`, `orientation_match`), and each

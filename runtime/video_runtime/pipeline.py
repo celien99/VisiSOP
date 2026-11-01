@@ -9,7 +9,7 @@ from contracts.runtime import HealthStatus
 from video_runtime.buffer import FrameBuffer
 from video_runtime.event_builder import EventBuilder
 from video_runtime.frame import Frame
-from video_runtime.inference.base import InferenceBackend
+from video_runtime.models import ModelProvider
 from video_runtime.perception import IoUTracker, Perception
 from video_runtime.publisher import HttpEventPublisher
 from video_runtime.sources.base import VideoSource
@@ -27,7 +27,7 @@ class Pipeline:
     def __init__(
         self,
         source: VideoSource,
-        inference: InferenceBackend,
+        inference: ModelProvider,
         tracker: IoUTracker,
         builder: EventBuilder,
         publisher: HttpEventPublisher,
@@ -56,7 +56,9 @@ class Pipeline:
         perception = Perception(
             frame=frame, detections=detections, tracks=tracks, at=now
         )
-        events = self._builder.build(frame, perception, now)
+        events = self._builder.build(
+            frame, perception, now, model_ref=self._inference.current_ref()
+        )
         # Preview and health update before publishing: a slow or down backend
         # must never freeze the live picture or report a stale camera.
         self._state.set_perception(perception, events)

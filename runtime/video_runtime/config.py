@@ -70,11 +70,22 @@ class BackendConfig(_ConfigModel):
 
 
 class ModelConfig(_ConfigModel):
+    source: Literal["file", "backend"] = "file"
+    project_key: str | None = None
+    poll_s: int = 10
     onnx_path: Path
     class_names_path: Path
     input_size: int = 640
     confidence: float = 0.25
     iou: float = 0.45
+
+    @model_validator(mode="after")
+    def _backend_needs_project(self) -> Self:
+        if self.source == "backend" and not self.project_key:
+            raise ValueError(
+                "model.project_key is required when model.source is backend"
+            )
+        return self
 
 
 class BindingConfig(_ConfigModel):
