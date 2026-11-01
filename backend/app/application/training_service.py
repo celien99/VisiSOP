@@ -487,7 +487,11 @@ def activate_model(
         )
     ).all()
     for other in active:
-        other.active = False
+        if other.id != model.id:
+            other.active = False
+    # The partial unique index allows one active row per project, so the
+    # deactivation must reach the database before the new activation.
+    session.flush()
     model.active = True
     write_audit(
         session,

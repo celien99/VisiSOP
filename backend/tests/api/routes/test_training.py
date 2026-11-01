@@ -138,6 +138,35 @@ def test_training_flow_and_model_activation(
     assert client.get(body["onnx_url"]).content == b"onnx"
     assert client.get(body["names_url"]).text == "remote\nbattery\n"
 
+    second_id = str(uuid4())
+    second_onnx, second_names = training_store.model_paths(second_id)
+    second_onnx.parent.mkdir(parents=True, exist_ok=True)
+    second_onnx.write_bytes(b"onnx2")
+    second_names.write_text("remote\n", encoding="utf-8", newline="\n")
+    db_session.add(
+        ModelArtifact(
+            id=second_id,
+            project_id=project["id"],
+            training_job_id=job.json()["id"],
+            version=2,
+            onnx_key=f"models/{second_id}/best.onnx",
+            names_key=f"models/{second_id}/names.txt",
+            manifest={},
+            active=False,
+            created_at=now,
+        )
+    )
+    db_session.flush()
+    switched = client.post(
+        f"/api/training/models/{second_id}/activate",
+        json={"operator": "tester"},
+    )
+    assert switched.status_code == 200
+    models = client.get(f"/api/training/projects/{project['id']}/models").json()
+    by_id = {item["id"]: item for item in models}
+    assert by_id[second_id]["active"] is True
+    assert by_id[model_id]["active"] is False
+
 
 def test_upload_rejects_unsupported_types(
     client: TestClient, training_store: TrainingStore
