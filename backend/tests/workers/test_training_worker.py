@@ -10,7 +10,11 @@ from app.application import training_service
 from app.core.config import settings
 from app.infrastructure.training_store import TrainingStore
 from app.models import DatasetVersion, ModelArtifact, TrainingJob, TrainingJobStatus
-from app.workers.training_worker import Spawned, execute_job
+from app.workers.training_worker import (
+    Spawned,
+    execute_job,
+    recover_interrupted_jobs,
+)
 
 
 class FakeProcess:
@@ -102,6 +106,24 @@ def test_successful_job_stores_the_model(
     assert model.active is False
     assert model.manifest["metrics"]["mAP50"] == 0.9
     assert (training_store.root / model.onnx_key).is_file()
+
+
+def test_a_restart_marks_running_jobs_as_failed(
+    db_session, training_store: TrainingStore, now: datetime
+) -> None:
+    job = make_job(db_session, training_store, now)
+    job.status = TrainingJobStatus.RUNNING
+    db_session.add(job)
+    db_session.flush()
+
+    assert recover_interrupted_jobs(db_session, now) == 1
+
+    db_session.expire_all()
+    stored = db_session.get(TrainingJob, job.id)
+    assert stored is not None
+    assert stored.status == TrainingJobStatus.FAILED
+    assert stored.error == "interrupted by a backend restart"
+    assert stored.finished_at is not None
 
 
 def test_an_unvalidated_artifact_fails_the_job(

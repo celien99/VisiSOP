@@ -227,6 +227,7 @@ def _succeed(
             "names": names,
             "epochs": job.epochs,
             "validated": True,
+            "device": payload.get("device"),
         },
         active=False,
         created_at=_now(),
@@ -284,7 +285,29 @@ def process_next_job() -> bool:
         return True
 
 
+def recover_interrupted_jobs(session: Session, now: datetime) -> int:
+    """A RUNNING job cannot survive a backend restart with a single worker."""
+    jobs = session.exec(
+        select(TrainingJob).where(col(TrainingJob.status) == TrainingJobStatus.RUNNING)
+    ).all()
+    for job in jobs:
+        job.status = TrainingJobStatus.FAILED
+        job.error = "interrupted by a backend restart"
+        job.finished_at = now
+        session.add(job)
+    session.commit()
+    return len(jobs)
+
+
+def recover_on_startup() -> int:
+    with Session(engine) as session:
+        return recover_interrupted_jobs(session, _now())
+
+
 async def run_training_worker() -> None:
+    recovered = await asyncio.to_thread(recover_on_startup)
+    if recovered:
+        logger.warning("marked %s interrupted training jobs as failed", recovered)
     while True:
         try:
             worked = await asyncio.to_thread(process_next_job)
