@@ -1,4 +1,4 @@
-from conftest import make_frame
+from conftest import make_detection, make_perception
 from contracts.runtime import CameraHealthStatus, RuntimeStatus
 from fastapi.testclient import TestClient
 
@@ -8,7 +8,7 @@ from video_runtime.state import RuntimeState
 
 def test_health_snapshot_and_stream() -> None:
     state = RuntimeState(runtime_id="runtime-01")
-    state.set_frame(make_frame(seq=1))
+    state.set_perception(make_perception((make_detection(),)))
     client = TestClient(create_app(state))
 
     body = client.get("/health").json()
@@ -25,9 +25,21 @@ def test_health_snapshot_and_stream() -> None:
     assert stream.content.count(b"--frame") == 2
 
 
+def test_detections_endpoint_lists_the_current_perception() -> None:
+    state = RuntimeState(runtime_id="runtime-01")
+    state.set_perception(make_perception((make_detection("bottle", 0.9),)))
+    client = TestClient(create_app(state))
+
+    body = client.get("/detections/cam-01").json()
+    assert body["detections"][0]["class_name"] == "bottle"
+    assert body["detections"][0]["confidence"] == 0.9
+    assert body["events"] == []
+
+
 def test_snapshot_without_a_frame_is_404() -> None:
     client = TestClient(create_app(RuntimeState(runtime_id="runtime-01")))
     assert client.get("/snapshot/cam-09").status_code == 404
+    assert client.get("/detections/cam-09").status_code == 404
 
 
 def test_start_stop_calls_the_state() -> None:
@@ -50,7 +62,7 @@ def test_stream_for_an_unknown_camera_is_404() -> None:
 
 def test_camera_status_reports_a_stopped_source_as_unavailable() -> None:
     state = RuntimeState(runtime_id="runtime-01")
-    state.set_frame(make_frame(seq=1))
+    state.set_perception(make_perception((make_detection(),)))
     state.status = RuntimeStatus.STOPPED
     state.error = "source stopped"
     status = state.camera_status("cam-01")

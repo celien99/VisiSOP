@@ -124,7 +124,9 @@ triggering, and packet size come from the camera as configured in MVS. Select
 format the camera streams (RGB8Packed, BGR8Packed, YUV422, Mono8, BayerRG8).
 
 - Preview: `http://127.0.0.1:8001/stream/cam-01`, snapshot at
-  `/snapshot/cam-01`, health at `/health`.
+  `/snapshot/cam-01`, health at `/health`, current detections/tracks at
+  `/detections/cam-01`. The stream carries the detection overlay
+  (`preview.overlay: off | boxes | all`).
 - It registers with `http://127.0.0.1:8000/api` and heartbeats every 5 s. If
   the backend goes down it keeps capturing, retries queued events (bounded at
   100), and re-registers after the backend comes back.
@@ -133,12 +135,13 @@ format the camera streams (RGB8Packed, BGR8Packed, YUV422, Mono8, BayerRG8).
 The runtime acquires frames from launch; the API's camera start/stop commands
 are acknowledged but do not pause the pipeline in this slice.
 
-## 10. Calibrate the zones
+## 10. Calibrate the bindings
 
-Watch `http://127.0.0.1:8001/stream/cam-01`, then edit `zones[].rect` in
-`config.demo.yaml` (`[x1, y1, x2, y2]`, normalized 0–1). A detection counts
-when its box center is inside the rectangle. Restart the runtime after editing
-the config.
+Watch `http://127.0.0.1:8001/stream/cam-01` (the overlay draws the rectangles),
+then edit `bindings[].params.rect` in `config.demo.yaml`
+(`[x1, y1, x2, y2]`, normalized 0–1). A detection counts when its box center is
+inside the rectangle. Restart the runtime after editing the config; the
+`/detections/cam-01` endpoint shows the raw boxes when the overlay is off.
 
 ## 11. Demo
 

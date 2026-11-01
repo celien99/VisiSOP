@@ -1,10 +1,13 @@
 import os
 from pathlib import Path
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 
+import contracts.demo  # noqa: F401  (registers the bottle demo event types)
 import yaml
+from contracts.catalog import get_event_type
 from contracts.enums import CameraRole
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from contracts.primitives import get_primitive
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class _ConfigModel(BaseModel):
@@ -74,19 +77,33 @@ class ModelConfig(_ConfigModel):
     iou: float = 0.45
 
 
-class ZoneConfig(_ConfigModel):
-    name: str
-    rect: tuple[float, float, float, float]
-    classes: list[str]
+class BindingConfig(_ConfigModel):
+    """One event type bound to a primitive and its resolved parameters."""
+
     event_type: str
-    min_confidence: float = 0.25
-    emit_interval_ms: int = 500
+    primitive: str
+    params: dict[str, Any]
+    emit_interval_ms: int = Field(default=500, ge=0)
+    evidence: bool = True
+
+    @model_validator(mode="after")
+    def _check_binding(self) -> Self:
+        spec = get_event_type(self.event_type)
+        primitive = get_primitive(self.primitive)
+        if spec.primitive_id != self.primitive:
+            raise ValueError(
+                f"event {self.event_type!r} is a {spec.primitive_id!r} instance, "
+                f"not {self.primitive!r}"
+            )
+        primitive.params_model.model_validate(self.params)
+        return self
 
 
 class PreviewConfig(_ConfigModel):
     host: str = "127.0.0.1"
     port: int = 8001
     fps: int = 10
+    overlay: Literal["off", "boxes", "all"] = "all"
 
     @field_validator("host")
     @classmethod
@@ -102,7 +119,7 @@ class RuntimeConfig(_ConfigModel):
     camera: CameraConfig
     backend: BackendConfig
     model: ModelConfig
-    zones: list[ZoneConfig] = Field(default_factory=list)
+    bindings: list[BindingConfig] = Field(default_factory=list)
     preview: PreviewConfig = Field(default_factory=PreviewConfig)
     inference_interval_ms: int = 100
     evidence_dir: Path

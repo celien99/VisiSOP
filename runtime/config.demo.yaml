@@ -28,16 +28,21 @@ preview:
   host: 127.0.0.1
   port: 8001
   fps: 10
-zones:
-  - name: pickup
-    rect: [0.02, 0.05, 0.49, 0.98]
-    classes: [bottle]
-    event_type: bottle_in_pickup_zone
-    min_confidence: 0.25
+  overlay: all
+bindings:
+  - event_type: bottle_in_pickup_zone
+    primitive: object_in_zone
+    params:
+      object_class: bottle
+      zone: pickup
+      rect: [0.02, 0.05, 0.49, 0.98]
+      min_conf: 0.25
     emit_interval_ms: 500
-  - name: target
-    rect: [0.51, 0.05, 0.99, 0.98]
-    classes: [bottle]
-    event_type: bottle_in_target_zone
-    min_confidence: 0.25
+  - event_type: bottle_in_target_zone
+    primitive: object_in_zone
+    params:
+      object_class: bottle
+      zone: target
+      rect: [0.51, 0.05, 0.99, 0.98]
+      min_conf: 0.25
     emit_interval_ms: 500

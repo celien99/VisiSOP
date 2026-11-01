@@ -25,6 +25,7 @@ class _StrictParams(BaseModel):
 class ObjectPresentParams(_StrictParams):
     object_class: str
     zone: str
+    rect: tuple[float, float, float, float] | None = None
     min_conf: float = 0.25
 
 
@@ -57,9 +58,11 @@ class StateClassifyParams(_StrictParams):
 
 class OrientationMatchParams(_StrictParams):
     object_class: str
+    compartment: str
     roi: tuple[float, float, float, float]
-    reference: str
-    tolerance_deg: float = 15.0
+    correct_class: str = "CORRECT"
+    reversed_class: str = "REVERSED"
+    min_conf: float = 0.5
 
 
 class FasteningActionParams(_StrictParams):

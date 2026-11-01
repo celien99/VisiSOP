@@ -6,24 +6,32 @@ import cv2
 from conftest import T, make_detection, make_frame
 from contracts.runtime import HealthStatus
 
-from video_runtime.config import ZoneConfig
-from video_runtime.event_builder import EventBuilder
+from video_runtime.config import BindingConfig
+from video_runtime.event_builder import EventBuilder, binding_from_config
 from video_runtime.evidence import EvidenceWriter
 from video_runtime.inference.base import Detection
+from video_runtime.perception import IoUTracker
 from video_runtime.pipeline import Pipeline
 from video_runtime.publisher import PublishOutcome
 from video_runtime.sources.base import SourceHealth
 from video_runtime.sources.fake import FakeSource
 from video_runtime.sources.file import FileSource
 from video_runtime.state import RuntimeState
-from video_runtime.zones import ZoneMapper
 
-PICKUP = ZoneConfig(
-    name="pickup",
-    rect=(0.0, 0.0, 0.5, 1.0),
-    classes=["bottle"],
-    event_type="bottle_in_pickup_zone",
-)
+
+def make_binding():
+    return binding_from_config(
+        BindingConfig(
+            event_type="bottle_in_pickup_zone",
+            primitive="object_in_zone",
+            params={
+                "object_class": "bottle",
+                "zone": "pickup",
+                "rect": (0.0, 0.0, 0.5, 1.0),
+                "min_conf": 0.25,
+            },
+        )
+    )
 
 
 class FakeInference:
@@ -70,13 +78,14 @@ def make_pipeline(
         "yolo11n-coco",
         "1",
         EvidenceWriter(tmp_path),
+        bindings=[make_binding()],
     )
     publisher = publisher or RecordingPublisher()
     state = RuntimeState(runtime_id="runtime-01")
     pipeline = Pipeline(
         FakeSource([]),
         FakeInference(detections),
-        ZoneMapper([PICKUP]),
+        IoUTracker(),
         builder,
         publisher,
         state,
@@ -84,12 +93,13 @@ def make_pipeline(
     return pipeline, publisher, state
 
 
-def test_process_frame_emits_zone_event_and_updates_preview(tmp_path) -> None:
+def test_process_frame_emits_primitive_event_and_updates_preview(tmp_path) -> None:
     pipeline, publisher, state = make_pipeline(tmp_path)
     events = pipeline.process_frame(make_frame(seq=1), now=T)
     assert [event.event_type for event in events] == ["bottle_in_pickup_zone"]
     assert publisher.events == events
     assert state.latest("cam-01") is not None
+    assert state.perception("cam-01") is not None
     assert "inference_ms" in state.metrics
     second = pipeline.process_frame(
         make_frame(seq=2, at=T + timedelta(milliseconds=100)),
@@ -153,12 +163,18 @@ def test_run_enforces_the_inference_interval(tmp_path) -> None:
             return super().infer(frame)
 
     builder = EventBuilder(
-        "st-01", "cam-01", "overview", "yolo11n-coco", "1", EvidenceWriter(tmp_path)
+        "st-01",
+        "cam-01",
+        "overview",
+        "yolo11n-coco",
+        "1",
+        EvidenceWriter(tmp_path),
+        bindings=[make_binding()],
     )
     pipeline = Pipeline(
         InfiniteSource(),
         TimedInference([]),
-        ZoneMapper([PICKUP]),
+        IoUTracker(),
         builder,
         RecordingPublisher(),
         RuntimeState(runtime_id="runtime-01"),
@@ -179,13 +195,19 @@ def test_run_exits_when_a_finite_source_ends(tmp_path) -> None:
     writer.release()
 
     builder = EventBuilder(
-        "st-01", "cam-01", "overview", "yolo11n-coco", "1", EvidenceWriter(tmp_path)
+        "st-01",
+        "cam-01",
+        "overview",
+        "yolo11n-coco",
+        "1",
+        EvidenceWriter(tmp_path),
+        bindings=[make_binding()],
     )
     state = RuntimeState(runtime_id="runtime-01")
     pipeline = Pipeline(
         FileSource(path, camera_id="cam-01", fps=100.0, loop=False),
         FakeInference([]),
-        ZoneMapper([PICKUP]),
+        IoUTracker(),
         builder,
         RecordingPublisher(),
         state,

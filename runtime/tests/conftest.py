@@ -6,6 +6,7 @@ from contracts.version import SCHEMA_VERSION
 
 from video_runtime.frame import Frame
 from video_runtime.inference.base import Detection
+from video_runtime.perception import Perception
 
 T = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
 
@@ -37,6 +38,17 @@ def make_detection(
         class_name=class_name,
         confidence=confidence,
         bbox=bbox,
+    )
+
+
+def make_perception(
+    detections: tuple[Detection, ...] = (),
+    *,
+    frame: Frame | None = None,
+    at: datetime = T,
+) -> Perception:
+    return Perception(
+        frame=frame or make_frame(), detections=detections, tracks=(), at=at
     )
 
 

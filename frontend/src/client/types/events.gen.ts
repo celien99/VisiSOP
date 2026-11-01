@@ -146,6 +146,22 @@ export type VisionEvent = {
     confidence: number;
     model: ModelRef;
     /**
+     * Primitive Id
+     */
+    primitive_id?: string | null;
+    /**
+     * Primitive Version
+     */
+    primitive_version?: string | null;
+    /**
+     * Binding Id
+     */
+    binding_id?: string | null;
+    /**
+     * Params Hash
+     */
+    params_hash?: string | null;
+    /**
      * Observation Ids
      */
     observation_ids?: Array<string>;

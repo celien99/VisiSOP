@@ -24,6 +24,14 @@ triggering, and packet size are whatever MVS configured on the camera. Frames
 are decoded from the type reported in each frame (RGB8Packed, BGR8Packed,
 YUV422, Mono8, BayerRG8).
 
+Detection is primitive-based: one shared detection pass per camera feeds
+stateful primitives (`object_in_zone`, `object_present`, `object_absent`,
+`count_threshold`, `state_classify`, `orientation_match`), and each
+`bindings[]` entry maps one primitive instance to one event type. The preview
+draws detection boxes, track ids, and the binding rectangles
+(`preview.overlay: off | boxes | all`); `GET /detections/{camera_id}` returns
+the current detections, tracks, and observations as JSON.
+
 - Evidence frames are written to `$EVIDENCE_DIR/tmp/{event_id}.jpg`; the backend
   moves and verifies them. A preview is not evidence. `EVIDENCE_DIR` is resolved
   to an absolute path and must be the **same directory** the backend uses.

@@ -50,6 +50,10 @@ class VisionEvent(_VersionedModel):
     frame_seq: int = Field(ge=0)
     confidence: float = Field(ge=0.0, le=1.0)
     model: ModelRef
+    primitive_id: str | None = None
+    primitive_version: str | None = None
+    binding_id: str | None = None
+    params_hash: str | None = None
     observation_ids: tuple[str, ...] = ()
     evidence_refs: tuple[str, ...] = ()
     attributes: dict[str, Any] = Field(default_factory=dict)

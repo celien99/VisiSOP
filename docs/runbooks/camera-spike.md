@@ -84,9 +84,9 @@ Write these into `docs/runbooks/acceptance-b1.md`:
 - exposure/gain that produced a usable image
 - the five sample JPEGs (keep them in `runtime/spike/`, not in git)
 
-## 6. Calibrate the zones
+## 6. Calibrate the bindings
 
 With the live preview open (`http://127.0.0.1:8001/stream/cam-01` after starting
-the runtime), set `zones[].rect` to the normalized `[x1, y1, x2, y2]` of the
-pickup and target areas. A detection counts when its bbox center falls inside
-the rectangle.
+the runtime), set `bindings[].params.rect` to the normalized
+`[x1, y1, x2, y2]` of each primitive's region. A detection counts when its bbox
+center falls inside the rectangle; the overlay draws the current rectangles.

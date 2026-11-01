@@ -10,14 +10,14 @@ from video_runtime.buffer import FrameBuffer
 from video_runtime.event_builder import EventBuilder
 from video_runtime.frame import Frame
 from video_runtime.inference.base import InferenceBackend
+from video_runtime.perception import IoUTracker, Perception
 from video_runtime.publisher import HttpEventPublisher
 from video_runtime.sources.base import VideoSource
 from video_runtime.state import RuntimeState
-from video_runtime.zones import ZoneMapper
 
 
 class Pipeline:
-    """Captures frames, runs inference, emits events, and feeds the preview.
+    """Captures frames, runs shared perception, emits events, feeds the preview.
 
     The reader thread keeps the newest frame; the worker samples it at the
     inference interval. The publisher never raises, so a backend outage only
@@ -28,7 +28,7 @@ class Pipeline:
         self,
         source: VideoSource,
         inference: InferenceBackend,
-        zones: ZoneMapper,
+        tracker: IoUTracker,
         builder: EventBuilder,
         publisher: HttpEventPublisher,
         state: RuntimeState,
@@ -38,7 +38,7 @@ class Pipeline:
     ) -> None:
         self._source = source
         self._inference = inference
-        self._zones = zones
+        self._tracker = tracker
         self._builder = builder
         self._publisher = publisher
         self._state = state
@@ -50,13 +50,16 @@ class Pipeline:
 
     def process_frame(self, frame: Frame, now: datetime) -> list[VisionEvent]:
         started = self._clock()
-        detections = self._inference.infer(frame)
+        detections = tuple(self._inference.infer(frame))
         inference_ms = (self._clock() - started) * 1000
-        hits = self._zones.map(detections, frame)
-        events = self._builder.build(frame, hits, now)
+        tracks = self._tracker.update(detections, camera_id=frame.camera_id, at=now)
+        perception = Perception(
+            frame=frame, detections=detections, tracks=tracks, at=now
+        )
+        events = self._builder.build(frame, perception, now)
         # Preview and health update before publishing: a slow or down backend
         # must never freeze the live picture or report a stale camera.
-        self._state.set_frame(frame)
+        self._state.set_perception(perception, events)
         self._state.status = HealthStatus.HEALTHY
         self._state.metrics["inference_ms"] = inference_ms
         self._state.metrics["fps"] = self._fps(frame.captured_at)

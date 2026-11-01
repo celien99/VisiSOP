@@ -21,6 +21,41 @@ def create_app(state: RuntimeState) -> FastAPI:
             ],
         }
 
+    @app.get("/detections/{camera_id}")
+    def detections(camera_id: str) -> dict[str, Any]:
+        perception = state.perception(camera_id)
+        if perception is None:
+            raise HTTPException(status_code=404, detail="no perception for camera")
+        return {
+            "camera_id": camera_id,
+            "at": perception.at.isoformat(),
+            "detections": [
+                {
+                    "class_name": detection.class_name,
+                    "confidence": detection.confidence,
+                    "bbox": list(detection.bbox),
+                }
+                for detection in perception.detections
+            ],
+            "tracks": [
+                {
+                    "track_id": track.track_id,
+                    "class_name": track.class_name,
+                    "confidence": track.confidence,
+                    "bbox": list(track.bbox),
+                }
+                for track in perception.tracks
+            ],
+            "events": [
+                {
+                    "event_type": event.event_type,
+                    "confidence": event.confidence,
+                    "attributes": event.attributes,
+                }
+                for event in state.events(camera_id)
+            ],
+        }
+
     @app.get("/snapshot/{camera_id}")
     def snapshot(camera_id: str) -> Response:
         jpeg = state.jpeg(camera_id)

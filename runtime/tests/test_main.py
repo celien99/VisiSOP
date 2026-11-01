@@ -2,14 +2,15 @@ import httpx
 import pytest
 from conftest import make_event
 from contracts.enums import CameraRole
+from pydantic import ValidationError
 
 from video_runtime.config import (
     BackendConfig,
+    BindingConfig,
     CameraConfig,
     FileSourceConfig,
     ModelConfig,
     RuntimeConfig,
-    ZoneConfig,
 )
 from video_runtime.main import _heartbeat, preflight
 from video_runtime.publisher import HttpEventPublisher
@@ -52,32 +53,41 @@ def test_heartbeat_surfaces_publisher_queue_health(tmp_path) -> None:
     assert [camera.camera_id for camera in beat.cameras] == ["cam-01"]
 
 
-def zone(**overrides) -> ZoneConfig:
+def binding(**overrides) -> BindingConfig:
     values = {
-        "name": "pickup",
-        "rect": (0.0, 0.0, 0.5, 1.0),
-        "classes": ["bottle"],
         "event_type": "bottle_in_pickup_zone",
+        "primitive": "object_in_zone",
+        "params": {
+            "object_class": "bottle",
+            "zone": "pickup",
+            "rect": (0.0, 0.0, 0.5, 1.0),
+        },
     }
     values.update(overrides)
-    return ZoneConfig(**values)
+    return BindingConfig(**values)
 
 
-def test_preflight_accepts_the_demo_zones(tmp_path) -> None:
+def test_preflight_accepts_the_demo_bindings(tmp_path) -> None:
     config = make_config(tmp_path)
-    config.zones = [zone()]
+    config.bindings = [binding()]
     preflight(config, ["bottle", "person"])
 
 
-def test_preflight_rejects_an_unregistered_event_type(tmp_path) -> None:
-    config = make_config(tmp_path)
-    config.zones = [zone(event_type="not_registered")]
-    with pytest.raises(SystemExit, match="not_registered"):
-        preflight(config, ["bottle"])
+def test_binding_rejects_an_unregistered_event_type() -> None:
+    with pytest.raises(ValidationError, match="not_registered"):
+        binding(event_type="not_registered")
 
 
 def test_preflight_rejects_a_class_the_model_does_not_know(tmp_path) -> None:
     config = make_config(tmp_path)
-    config.zones = [zone(classes=["human"])]
+    config.bindings = [
+        binding(
+            params={
+                "object_class": "human",
+                "zone": "pickup",
+                "rect": (0.0, 0.0, 0.5, 1.0),
+            }
+        )
+    ]
     with pytest.raises(SystemExit, match="human"):
         preflight(config, ["bottle"])

@@ -23,11 +23,14 @@ model:
   class_names_path: models/coco.names
 backend:
   base_url: http://127.0.0.1:8000/api
-zones:
-  - name: pickup
-    rect: [0.05, 0.15, 0.45, 0.95]
-    classes: [bottle]
-    event_type: bottle_in_pickup_zone
+bindings:
+  - event_type: bottle_in_pickup_zone
+    primitive: object_in_zone
+    params:
+      object_class: bottle
+      zone: pickup
+      rect: [0.05, 0.15, 0.45, 0.95]
+      min_conf: 0.25
 """
 
 
@@ -51,7 +54,8 @@ def test_load_config_uses_defaults_and_resolves_relative_paths(
     assert config.preview.port == 8001
     assert config.inference_interval_ms == 100
     assert config.evidence_dir == tmp_path / "evidence"
-    assert config.zones[0].emit_interval_ms == 500
+    assert config.bindings[0].emit_interval_ms == 500
+    assert config.preview.overlay == "all"
 
 
 def test_load_config_parses_the_gige_source(tmp_path, monkeypatch) -> None:
@@ -93,6 +97,17 @@ def test_load_config_parses_the_mvs_source(tmp_path, monkeypatch) -> None:
     assert source.serial == "DA9184675"
     assert source.exposure_us == 8000
     assert source.gain_db == 0.0
+
+
+def test_binding_primitive_must_match_the_event_type(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("EVIDENCE_DIR", str(tmp_path))
+    path = tmp_path / "demo.yaml"
+    path.write_text(
+        FILE_CONFIG.replace("primitive: object_in_zone", "primitive: object_present"),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValidationError):
+        load_config(path)
 
 
 def test_evidence_dir_is_required(tmp_path, monkeypatch) -> None:

@@ -10,17 +10,17 @@ from contracts.catalog import catalog_snapshot
 from contracts.runtime import RuntimeHeartbeat, RuntimeRegistration
 
 from video_runtime import __version__
-from video_runtime.config import RuntimeConfig, load_config
-from video_runtime.event_builder import EventBuilder
+from video_runtime.config import BindingConfig, RuntimeConfig, load_config
+from video_runtime.event_builder import EventBuilder, binding_from_config
 from video_runtime.evidence import EvidenceWriter
 from video_runtime.inference.onnx_yolo import OnnxYoloBackend
+from video_runtime.perception import BBox, IoUTracker
 from video_runtime.pipeline import Pipeline
 from video_runtime.publisher import HttpEventPublisher
 from video_runtime.registrar import RuntimeRegistrar
 from video_runtime.server import create_app
 from video_runtime.sources.factory import build_source
 from video_runtime.state import RuntimeState
-from video_runtime.zones import ZoneMapper
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,12 @@ def main(argv: list[str] | None = None) -> int:
     config = load_config(args.config)
     (config.evidence_dir / "tmp").mkdir(parents=True, exist_ok=True)
 
-    state = RuntimeState(runtime_id=config.runtime_id, preview_fps=config.preview.fps)
+    state = RuntimeState(
+        runtime_id=config.runtime_id,
+        preview_fps=config.preview.fps,
+        overlay=config.preview.overlay,
+        regions=_binding_regions(config.bindings),
+    )
     server = uvicorn.Server(
         uvicorn.Config(
             create_app(state),
@@ -82,19 +87,39 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def preflight(config: RuntimeConfig, class_names: list[str]) -> None:
-    """Fail at startup, not silently per frame, on a misconfigured zone."""
+    """Fail at startup, not silently per frame, on a misconfigured binding."""
     registered = catalog_snapshot()
     known_classes = set(class_names)
-    for zone in config.zones:
-        if zone.event_type not in registered:
+    for binding in config.bindings:
+        if binding.event_type not in registered:
             raise SystemExit(
-                f"zone {zone.name!r} uses unregistered event type {zone.event_type!r}"
+                f"binding uses unregistered event type {binding.event_type!r}"
             )
-        unknown = sorted(set(zone.classes) - known_classes)
-        if unknown:
-            raise SystemExit(
-                f"zone {zone.name!r} uses classes the model does not know: {unknown}"
-            )
+        for key in ("object_class", "correct_class", "reversed_class"):
+            value = binding.params.get(key)
+            if isinstance(value, str) and value not in known_classes:
+                raise SystemExit(
+                    f"binding {binding.event_type!r} uses class the model does "
+                    f"not know: {value!r}"
+                )
+        for state in binding.params.get("states", ()):
+            if state not in known_classes:
+                raise SystemExit(
+                    f"binding {binding.event_type!r} uses class the model does "
+                    f"not know: {state!r}"
+                )
+
+
+def _binding_regions(
+    bindings: list[BindingConfig],
+) -> tuple[tuple[BBox, str], ...]:
+    regions: list[tuple[BBox, str]] = []
+    for binding in bindings:
+        for key in ("rect", "roi"):
+            rect = binding.params.get(key)
+            if rect is not None:
+                regions.append((tuple(rect), binding.event_type))
+    return tuple(regions)
 
 
 def build_pipeline(
@@ -116,11 +141,12 @@ def build_pipeline(
         model_name=config.model.onnx_path.stem,
         model_version="1",
         writer=EvidenceWriter(config.evidence_dir),
+        bindings=[binding_from_config(binding) for binding in config.bindings],
     )
     return Pipeline(
         build_source(config.camera.source, config.camera.camera_id),
         inference,
-        ZoneMapper(config.zones),
+        IoUTracker(),
         builder,
         publisher,
         state,
