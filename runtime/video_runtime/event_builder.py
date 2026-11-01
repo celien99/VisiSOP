@@ -132,7 +132,9 @@ class EventBuilder:
                 validate_attributes(binding.event_type, attributes)
                 event_id = str(event_id_factory())
                 evidence_refs: tuple[str, ...] = ()
-                if binding.evidence and changed:
+                # Heartbeats carry evidence too: an observation that predates
+                # the step activation may complete it before any change event.
+                if binding.evidence:
                     try:
                         evidence_refs = (
                             self._writer.write(

@@ -70,7 +70,7 @@ def test_emits_one_event_per_binding_per_interval(tmp_path) -> None:
     )
 
     assert len(first) == 1 and second == [] and len(third) == 1
-    assert third[0].evidence_refs == ()
+    assert third[0].evidence_refs
     event = first[0]
     assert event.event_type == "bottle_in_pickup_zone"
     assert event.primitive_id == "object_in_zone"
@@ -83,7 +83,7 @@ def test_emits_one_event_per_binding_per_interval(tmp_path) -> None:
     assert (tmp_path / event.evidence_refs[0]).exists()
 
 
-def test_changed_observations_emit_and_heartbeats_do_not_write_evidence(
+def test_changed_observations_emit_and_heartbeats_keep_evidence(
     tmp_path,
 ) -> None:
     binding = binding_from_config(
@@ -130,7 +130,7 @@ def test_changed_observations_emit_and_heartbeats_do_not_write_evidence(
         now=T + timedelta(milliseconds=2600),
     )
     assert heartbeat[0].attributes["count"] == 2
-    assert heartbeat[0].evidence_refs == ()
+    assert heartbeat[0].evidence_refs
 
 
 def test_reentry_after_an_empty_frame_emits_again(tmp_path) -> None:
