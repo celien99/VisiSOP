@@ -66,6 +66,7 @@ class ModelManager:
         poll_s: int = 10,
         transport: httpx.BaseTransport | None = None,
         fallback_ref: ModelRef | None = None,
+        required_classes: Sequence[str] = (),
     ) -> None:
         self._base_url = base_url.rstrip("/")
         self._project_key = project_key
@@ -81,6 +82,8 @@ class ModelManager:
         self._ref = self._fallback_ref
         self._classes: tuple[str, ...] = ()
         self._model_id: str | None = None
+        self._required_classes = tuple(required_classes)
+        self._last_error: str | None = None
 
     def refresh(self) -> bool:
         """Fetch the active model; returns True when a new version was swapped in."""
@@ -90,6 +93,14 @@ class ModelManager:
         response.raise_for_status()
         data = response.json()
         model_id = str(data["id"])
+        classes = [str(name) for name in data.get("classes", [])]
+        missing = sorted(set(self._required_classes) - set(classes))
+        if missing:
+            self._last_error = (
+                f"model {model_id} is missing binding classes: {missing}"
+            )
+            logger.error(self._last_error)
+            return False
         with self._lock:
             if model_id == self._model_id and self._backend is not None:
                 return False
@@ -102,7 +113,7 @@ class ModelManager:
         names = [
             line for line in names_path.read_text(encoding="utf-8").splitlines() if line
         ]
-        classes = [str(name) for name in data.get("classes", [])] or names
+        classes = classes or names
         backend = self._backend_factory(onnx_path, names or classes)
         ref = ModelRef(name=f"model:{self._project_key}", version=str(data["version"]))
 
@@ -112,6 +123,7 @@ class ModelManager:
             self._ref = ref
             self._classes = tuple(classes)
             self._model_id = model_id
+            self._last_error = None
         if previous is not None:
             previous.close()
         logger.info(
@@ -137,6 +149,9 @@ class ModelManager:
         with self._lock:
             return self._classes
 
+    def health_error(self) -> str | None:
+        return self._last_error
+
     def close(self) -> None:
         with self._lock:
             backend = self._backend
@@ -145,12 +160,19 @@ class ModelManager:
             backend.close()
         self._client.close()
 
-    def run_poller(self, stop_event: threading.Event) -> None:
+    def run_poller(
+        self,
+        stop_event: threading.Event,
+        on_error: Callable[[str | None], None] | None = None,
+    ) -> None:
         while not stop_event.is_set():
             try:
                 self.refresh()
             except Exception as exc:  # network boundary: retry on the next tick
-                logger.warning("active model refresh failed: %s", exc)
+                self._last_error = f"active model refresh failed: {exc}"
+                logger.warning(self._last_error)
+            if on_error is not None:
+                on_error(self._last_error)
             stop_event.wait(self._poll_s)
 
     def _download(self, url: str) -> bytes:

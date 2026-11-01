@@ -8,7 +8,7 @@ from pathlib import Path
 import uvicorn
 from contracts.catalog import catalog_snapshot
 from contracts.events import ModelRef
-from contracts.runtime import RuntimeHeartbeat, RuntimeRegistration
+from contracts.runtime import HealthStatus, RuntimeHeartbeat, RuntimeRegistration
 
 from video_runtime import __version__
 from video_runtime.config import BindingConfig, RuntimeConfig, load_config
@@ -67,8 +67,12 @@ def main(argv: list[str] | None = None) -> int:
 
     provider, class_names = build_provider(config)
     if isinstance(provider, ModelManager):
+        _model_health(state, provider.health_error())
         threading.Thread(
-            target=provider.run_poller, args=(stop_event,), daemon=True
+            target=provider.run_poller,
+            args=(stop_event,),
+            kwargs={"on_error": lambda error: _model_health(state, error)},
+            daemon=True,
         ).start()
     pipeline = build_pipeline(config, state, publisher, provider, class_names)
     for handled in (signal.SIGINT, signal.SIGTERM):
@@ -131,6 +135,30 @@ def _binding_regions(
     return tuple(regions)
 
 
+def _required_classes(bindings: list[BindingConfig]) -> tuple[str, ...]:
+    names: set[str] = set()
+    for binding in bindings:
+        for key in ("object_class", "correct_class", "reversed_class"):
+            value = binding.params.get(key)
+            if isinstance(value, str):
+                names.add(value)
+        for state in binding.params.get("states", ()):
+            if isinstance(state, str):
+                names.add(state)
+    return tuple(sorted(names))
+
+
+def _model_health(state: RuntimeState, error: str | None) -> None:
+    if error is None:
+        if state.status is HealthStatus.DEGRADED:
+            state.status = HealthStatus.HEALTHY
+        state.error = None
+        return
+    state.error = error
+    if state.status is HealthStatus.HEALTHY:
+        state.status = HealthStatus.DEGRADED
+
+
 def build_provider(
     config: RuntimeConfig,
 ) -> tuple[ModelProvider, list[str]]:
@@ -154,6 +182,7 @@ def build_provider(
             cache_dir=model.onnx_path.parent / "active",
             backend_factory=factory,
             poll_s=model.poll_s,
+            required_classes=_required_classes(config.bindings),
         )
         try:
             manager.refresh()

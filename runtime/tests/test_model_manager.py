@@ -20,7 +20,9 @@ class FakeBackend:
         self.closed = True
 
 
-def make_manager(tmp_path, state: dict) -> ModelManager:
+def make_manager(
+    tmp_path, state: dict, *, required_classes: tuple[str, ...] = ()
+) -> ModelManager:
     def handler(request: httpx.Request) -> httpx.Response:
         url = str(request.url)
         if url.endswith("/training/projects/remote/active-model"):
@@ -47,6 +49,7 @@ def make_manager(tmp_path, state: dict) -> ModelManager:
         FakeBackend,
         poll_s=1,
         transport=httpx.MockTransport(handler),
+        required_classes=required_classes,
     )
 
 
@@ -71,6 +74,18 @@ def test_refresh_downloads_and_swaps_models(tmp_path) -> None:
     assert manager.current_ref().version == "2"
     second = FakeBackend.instances[-1]
     assert second is not first
+    manager.close()
+
+
+def test_refresh_refuses_a_model_missing_binding_classes(tmp_path) -> None:
+    FakeBackend.instances.clear()
+    manager = make_manager(
+        tmp_path, {"id": "m1", "version": 1}, required_classes=("hand",)
+    )
+
+    assert manager.refresh() is False
+    assert "hand" in (manager.health_error() or "")
+    assert FakeBackend.instances == []
     manager.close()
 
 
