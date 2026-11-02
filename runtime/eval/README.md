@@ -40,20 +40,29 @@ classifier head can replace them later without changing the event contract.
 
 ## GPU (RTX 4060 and similar)
 
-`uv sync --extra train` installs the default CPU torch build. After the
-first sync, replace it with the CUDA build matching the installed driver
-(cu124 here) and verify:
+The runtime pins the CUDA 12.4 torch index in `runtime/pyproject.toml`
+(`[tool.uv.sources]` + `pytorch-cu124`), so the train environment installs the
+GPU build by default. Stop the runtime/training process, then:
 
-```bash
+```powershell
 cd runtime
-uv sync --extra train
-uv pip install --index-url https://download.pytorch.org/whl/cu124 torch torchvision
-uv run python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0))"
+powershell -ExecutionPolicy Bypass -File scripts/setup_cuda.ps1
 ```
 
-The trainer resolves `TRAINING_DEVICE` (default `0`) to `cpu` when CUDA is
-unavailable and records the resolved device in `metrics.json` and the model
-manifest, so a CPU run is visible rather than silent.
+It syncs `--extra train`, prints the GPU, and runs a CUDA smoke test. The
+equivalent manual check:
+
+```bash
+uv sync --extra train
+uv run python -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.cuda.get_device_name(0))"
+```
+
+For a different driver/CUDA generation, change the index URL in
+`pyproject.toml` (cu121, cu126, ...) and re-run `uv lock`. The CUDA wheel still
+works on CPU when no GPU is present. The trainer resolves `TRAINING_DEVICE`
+(default `0`) to `cpu` when CUDA is unavailable and records the resolved device
+in `metrics.json` and the model manifest, so a CPU run is visible rather than
+silent.
 
 ## Model handoff
 

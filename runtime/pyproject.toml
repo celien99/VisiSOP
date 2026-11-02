@@ -17,7 +17,12 @@ dependencies = [
 
 [project.optional-dependencies]
 gige = ["harvesters>=1.4.0"]
-train = ["ultralytics[export]>=8.3", "onnxscript>=0.5"]
+train = [
+    "ultralytics[export]>=8.3",
+    "onnxscript>=0.5",
+    "torch",
+    "torchvision",
+]
 
 [dependency-groups]
 dev = [
@@ -29,6 +34,16 @@ dev = [
 
 [tool.uv.sources]
 contracts = { path = "../contracts" }
+# Training uses the CUDA 12.4 build so the RTX 4060 is used; the wheel still
+# falls back to CPU when no CUDA device is present. Change the index for a
+# different driver/CUDA generation (cu121, cu126, ...).
+torch = { index = "pytorch-cu124" }
+torchvision = { index = "pytorch-cu124" }
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
 
 [build-system]
 requires = ["hatchling"]
