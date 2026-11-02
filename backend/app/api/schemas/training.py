@@ -62,6 +62,7 @@ class VideoRead(BaseModel):
 class ExtractRequest(BaseModel):
     fps: float = Field(default=1.0, gt=0, le=30)
     max_frames: int = Field(default=500, ge=1, le=5000)
+    dedupe: bool = True
 
 
 class FrameRead(BaseModel):

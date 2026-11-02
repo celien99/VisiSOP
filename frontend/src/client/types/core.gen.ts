@@ -186,6 +186,10 @@ export type ExtractRequest = {
      * Max Frames
      */
     max_frames?: number;
+    /**
+     * Dedupe
+     */
+    dedupe?: boolean;
 };
 
 /**

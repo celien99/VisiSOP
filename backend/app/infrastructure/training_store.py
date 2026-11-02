@@ -5,9 +5,13 @@ import shutil
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import cv2
+import numpy as np
+
+_DEDUPE_THRESHOLD = 1.0
+_SIGNATURE_SIZE = (64, 48)
 
 
 class TrainingStoreError(ValueError):
@@ -102,12 +106,14 @@ class TrainingStore:
         *,
         fps: float,
         max_frames: int,
+        dedupe: bool = True,
     ) -> list[ExtractedFrame]:
         video_path = self.resolve(video_key)
         capture = cv2.VideoCapture(str(video_path))
         if not capture.isOpened():
             raise TrainingStoreError(f"cannot open video {video_key!r}")
         frames: list[ExtractedFrame] = []
+        last_signature: np.ndarray | None = None
         try:
             source_fps = float(capture.get(cv2.CAP_PROP_FPS) or 0.0)
             step = max(1, round(source_fps / fps)) if fps > 0 and source_fps > 0 else 1
@@ -119,6 +125,14 @@ class TrainingStore:
                 if source_index % step != 0:
                     source_index += 1
                     continue
+                signature = _frame_signature(image) if dedupe else None
+                if dedupe and last_signature is not None and signature is not None:
+                    difference = float(np.mean(cv2.absdiff(signature, last_signature)))
+                    if difference < _DEDUPE_THRESHOLD:
+                        source_index += 1
+                        continue
+                if signature is not None:
+                    last_signature = signature
                 height, width = image.shape[:2]
                 frame_index = len(frames)
                 image_key = (
@@ -239,6 +253,11 @@ class TrainingStore:
         if not ok:
             raise TrainingStoreError(f"cannot encode {key!r}")
         path.write_bytes(encoded.tobytes())
+
+
+def _frame_signature(image: Any) -> np.ndarray:
+    small = cv2.resize(image, _SIGNATURE_SIZE, interpolation=cv2.INTER_AREA)
+    return cast(np.ndarray, cv2.cvtColor(small, cv2.COLOR_BGR2GRAY))
 
 
 def _thumbnail(image: Any, width: int = 320) -> Any:

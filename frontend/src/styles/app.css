@@ -1033,7 +1033,6 @@
   .vs-labeler__canvas text {
     fill: var(--vs-ink);
     stroke: none;
-    font-size: var(--vs-text-micro);
   }
   .vs-boxes {
     list-style: none;

@@ -195,6 +195,7 @@ def extract_video(
     video_id: str,
     fps: float,
     max_frames: int,
+    dedupe: bool,
     now: datetime,
 ) -> list[TrainingFrame]:
     video = get_video(session, video_id)
@@ -207,6 +208,7 @@ def extract_video(
         video.id,
         fps=fps,
         max_frames=max_frames,
+        dedupe=dedupe,
     )
     frames = [
         TrainingFrame(

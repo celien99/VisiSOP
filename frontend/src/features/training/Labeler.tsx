@@ -152,7 +152,11 @@ export function Labeler({
                 x={box.x1}
                 y={box.y1}
               />
-              <text x={box.x1 + 0.005} y={Math.max(0.02, box.y1 - 0.01)}>
+              <text
+                fontSize={0.035}
+                x={box.x1 + 0.005}
+                y={Math.max(0.04, box.y1 - 0.01)}
+              >
                 {box.class_name}
               </text>
             </g>

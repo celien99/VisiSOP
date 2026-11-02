@@ -75,6 +75,25 @@ def test_store_probes_extracts_and_exports(
     assert label.split()[0] in {"0", "1"}
 
 
+def test_extract_dedupes_identical_frames(
+    training_store: TrainingStore, tmp_path
+) -> None:
+    path = tmp_path / "static.avi"
+    writer = cv2.VideoWriter(
+        str(path), cv2.VideoWriter_fourcc(*"MJPG"), 10.0, (64, 48)
+    )
+    for _ in range(10):
+        writer.write(np.zeros((48, 64, 3), dtype=np.uint8))
+    writer.write(np.full((48, 64, 3), 200, dtype=np.uint8))
+    writer.release()
+
+    key = training_store.save_video("p1", "static", ".avi", path.read_bytes())
+    frames = training_store.extract_frames(
+        key, "p1", "static", fps=10, max_frames=100, dedupe=True
+    )
+    assert len(frames) == 2
+
+
 def test_service_flow(
     db_session, training_store: TrainingStore, clip: Path, now: datetime
 ) -> None:
@@ -103,6 +122,7 @@ def test_service_flow(
         video_id=video.id,
         fps=5,
         max_frames=100,
+        dedupe=True,
         now=now,
     )
     assert len(frames) == 30

@@ -281,6 +281,7 @@ def extract_training_video(
             video_id=video_id,
             fps=payload.fps,
             max_frames=payload.max_frames,
+            dedupe=payload.dedupe,
             now=_now(),
         )
     except training_service.TrainingNotFound:
