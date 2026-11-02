@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
-from video_runtime.tools.train_yolo import TrainSpec, run_training
+from video_runtime.tools.train_yolo import TrainSpec, _write_json, run_training
 
 
 def make_spec(tmp_path: Path) -> TrainSpec:
@@ -49,6 +49,26 @@ class FakeModel:
         self._export_path.parent.mkdir(parents=True, exist_ok=True)
         self._export_path.write_bytes(b"onnx")
         return str(self._export_path)
+
+
+def test_write_json_retries_while_a_reader_holds_the_file(
+    tmp_path, monkeypatch
+) -> None:
+    original = Path.replace
+    calls = {"count": 0}
+
+    def flaky_replace(self, target):
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise PermissionError(13, "reader holds the file")
+        return original(self, target)
+
+    monkeypatch.setattr(Path, "replace", flaky_replace)
+
+    _write_json(tmp_path / "progress.json", {"epoch": 1})
+
+    assert json.loads((tmp_path / "progress.json").read_text()) == {"epoch": 1}
+    assert calls["count"] >= 2
 
 
 def test_run_training_exports_the_artifacts(tmp_path) -> None:

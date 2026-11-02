@@ -9,6 +9,7 @@ import argparse
 import json
 import shutil
 import sys
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -51,7 +52,16 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(payload), encoding="utf-8")
-    temporary.replace(path)
+    # The backend worker polls this file; on Windows an atomic replace fails
+    # while the reader has it open, so retry briefly before writing directly.
+    for _ in range(10):
+        try:
+            temporary.replace(path)
+            return
+        except PermissionError:
+            time.sleep(0.02)
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    temporary.unlink(missing_ok=True)
 
 
 def _resolved_device(device: str) -> str:
