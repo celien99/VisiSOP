@@ -51,6 +51,7 @@ class ExportFrame:
     frame_id: str
     image_path: Path
     annotations: tuple[ExportAnnotation, ...]
+    video_key: str = ""
 
 
 @dataclass(frozen=True)
@@ -185,14 +186,41 @@ class TrainingStore:
             (base / "labels" / split).mkdir(parents=True, exist_ok=True)
 
         ordered = sorted(frames, key=lambda frame: frame.frame_id)
-        stride = max(2, round(1 / val_ratio)) if val_ratio > 0 else 0
+        groups: dict[str, list[ExportFrame]] = {}
+        for frame in frames:
+            groups.setdefault(frame.video_key or "", []).append(frame)
+
+        assigned: list[tuple[ExportFrame, str]]
+        if len(groups) > 1:
+            # Keep every video in exactly one split; frames from one take are
+            # near-duplicates and would inflate validation metrics.
+            keys = sorted(groups)
+            val_videos = 0
+            if val_ratio > 0:
+                val_videos = max(1, round(len(keys) * val_ratio))
+                val_videos = min(val_videos, len(keys) - 1)
+            val_keys = set(keys[:val_videos]) if val_videos else set()
+            assigned = [
+                (frame, "val" if key in val_keys else "train")
+                for key, group in groups.items()
+                for frame in group
+            ]
+            split_by = "video"
+        else:
+            stride = max(2, round(1 / val_ratio)) if val_ratio > 0 else 0
+            assigned = [
+                (
+                    frame,
+                    "val"
+                    if stride and index % stride == 0 and len(ordered) > 4
+                    else "train",
+                )
+                for index, frame in enumerate(ordered)
+            ]
+            split_by = "frame"
+
         splits: list[str] = []
-        for index, frame in enumerate(ordered):
-            split = (
-                "val"
-                if stride and index % stride == 0 and len(ordered) > 4
-                else "train"
-            )
+        for frame, split in assigned:
             splits.append(split)
             image_target = base / "images" / split / f"{frame.frame_id}.jpg"
             shutil.copyfile(frame.image_path, image_target)
@@ -223,6 +251,7 @@ class TrainingStore:
             "val_count": val_count,
             "data_yaml": f"{base_key}/data.yaml",
             "frame_ids": [frame.frame_id for frame in ordered],
+            "split_by": split_by,
         }
         (base / "manifest.json").write_text(
             json.dumps(manifest, indent=2), encoding="utf-8"

@@ -421,11 +421,13 @@ def create_dataset(
     frames: list[ExportFrame] = []
     for frame_id in frame_ids:
         frame = get_frame(session, frame_id)
+        video = get_video(session, frame.video_id)
         boxes = frame_annotations(session, frame_id)
         frames.append(
             ExportFrame(
                 frame_id=frame.id,
                 image_path=store.resolve(frame.storage_key),
+                video_key=video.filename,
                 annotations=tuple(
                     ExportAnnotation(
                         class_name=box.class_name,

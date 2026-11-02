@@ -94,6 +94,34 @@ def test_extract_dedupes_identical_frames(
     assert len(frames) == 2
 
 
+def test_dataset_split_keeps_videos_whole(
+    training_store: TrainingStore, tmp_path
+) -> None:
+    image = tmp_path / "frame.jpg"
+    cv2.imwrite(str(image), np.zeros((48, 64, 3), dtype=np.uint8))
+    frames = [
+        ExportFrame(
+            frame_id=f"{video}{index}",
+            image_path=image,
+            annotations=(ExportAnnotation("remote", 0.1, 0.1, 0.5, 0.5),),
+            video_key=video,
+        )
+        for video in ("a", "b")
+        for index in range(3)
+    ]
+
+    export = training_store.save_dataset(
+        "p", 2, classes=["remote"], frames=frames, val_ratio=0.5
+    )
+
+    assert export.manifest["split_by"] == "video"
+    base = training_store.resolve(export.storage_key)
+    val_labels = {path.stem for path in (base / "labels" / "val").glob("*.txt")}
+    train_labels = {path.stem for path in (base / "labels" / "train").glob("*.txt")}
+    assert val_labels == {"a0", "a1", "a2"}
+    assert train_labels == {"b0", "b1", "b2"}
+
+
 def test_service_flow(
     db_session, training_store: TrainingStore, clip: Path, now: datetime
 ) -> None:
