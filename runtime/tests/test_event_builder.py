@@ -59,9 +59,7 @@ def test_emits_one_event_per_binding_per_interval(tmp_path) -> None:
     )
     third_perception = replace(
         perception,
-        frame=replace(
-            frame, frame_seq=3, captured_at=T + timedelta(milliseconds=2100)
-        ),
+        frame=replace(frame, frame_seq=3, captured_at=T + timedelta(milliseconds=2100)),
     )
     third = builder.build(
         third_perception.frame,
