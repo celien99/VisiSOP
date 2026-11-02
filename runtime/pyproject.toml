@@ -17,7 +17,7 @@ dependencies = [
 
 [project.optional-dependencies]
 gige = ["harvesters>=1.4.0"]
-train = ["ultralytics[export]>=8.3"]
+train = ["ultralytics[export]>=8.3", "onnxscript>=0.5"]
 
 [dependency-groups]
 dev = [
