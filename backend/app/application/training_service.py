@@ -63,6 +63,47 @@ def create_project(
     return project
 
 
+def update_project(
+    session: Session,
+    *,
+    project_id: str,
+    name: str | None,
+    classes: list[str] | None,
+) -> TrainingProject:
+    project = get_project(session, project_id)
+    if classes is not None:
+        _validate_classes(classes)
+        cleaned = list(dict.fromkeys(classes))
+        removed = set(project.classes) - set(cleaned)
+        if removed:
+            in_use = session.exec(
+                select(TrainingAnnotation.class_name)
+                .join(
+                    TrainingFrame,
+                    col(TrainingAnnotation.frame_id) == col(TrainingFrame.id),
+                )
+                .join(
+                    TrainingVideo,
+                    col(TrainingFrame.video_id) == col(TrainingVideo.id),
+                )
+                .where(
+                    TrainingVideo.project_id == project_id,
+                    col(TrainingAnnotation.class_name).in_(removed),
+                )
+                .limit(1)
+            ).first()
+            if in_use is not None:
+                raise TrainingInvalid(f"classes in use: {sorted(removed)}")
+        project.classes = cleaned
+    if name is not None:
+        if not name.strip():
+            raise TrainingInvalid("name must not be empty")
+        project.name = name.strip()
+    session.add(project)
+    session.flush()
+    return project
+
+
 def list_projects(session: Session) -> list[TrainingProject]:
     return list(
         session.exec(

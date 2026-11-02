@@ -10,10 +10,9 @@ class OrientationMatch:
 
     def evaluate(self, perception: Perception, params: BaseModel) -> list[Observation]:
         assert isinstance(params, OrientationMatchParams)
-        labels = {
-            params.correct_class: "CORRECT",
-            params.reversed_class: "REVERSED",
-        }
+        labels = {params.correct_class: "CORRECT"}
+        if params.reversed_class:
+            labels[params.reversed_class] = "REVERSED"
         hits = [
             detection
             for detection in perception.detections

@@ -88,6 +88,29 @@ def test_training_flow_and_model_activation(
         )
         assert response.status_code == 200
 
+    extended = client.patch(
+        f"/api/training/projects/{project['id']}",
+        json={"classes": ["remote", "battery", "hand", "CLOSED", "CORRECT"]},
+    )
+    assert extended.status_code == 200
+    assert extended.json()["classes"] == [
+        "remote",
+        "battery",
+        "hand",
+        "CLOSED",
+        "CORRECT",
+    ]
+    in_use = client.patch(
+        f"/api/training/projects/{project['id']}",
+        json={"classes": ["battery", "hand", "CLOSED", "CORRECT"]},
+    )
+    assert in_use.status_code == 422
+    removed = client.patch(
+        f"/api/training/projects/{project['id']}",
+        json={"classes": ["remote", "hand", "CLOSED", "CORRECT"]},
+    )
+    assert removed.status_code == 200
+
     stats = client.get(f"/api/training/projects/{project['id']}/stats").json()
     assert stats["labeled_frames"] == 5
 
@@ -117,7 +140,11 @@ def test_training_flow_and_model_activation(
             version=1,
             onnx_key=f"models/{model_id}/best.onnx",
             names_key=f"models/{model_id}/names.txt",
-            manifest={"metrics": {"mAP50": 0.9}, "validated": True},
+            manifest={
+                "metrics": {"mAP50": 0.9},
+                "validated": True,
+                "names": ["remote", "battery"],
+            },
             active=False,
             created_at=now,
         )

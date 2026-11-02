@@ -22,6 +22,23 @@ class ProjectCreate(BaseModel):
         return cleaned
 
 
+class ProjectUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1)
+    classes: list[str] | None = None
+
+    @field_validator("classes")
+    @classmethod
+    def _clean_classes(cls, value: list[str] | None) -> list[str] | None:
+        if value is None:
+            return None
+        cleaned = [name.strip() for name in value]
+        if any(not name for name in cleaned):
+            raise ValueError("class names must not be empty")
+        if len(set(cleaned)) != len(cleaned):
+            raise ValueError("class names must be unique")
+        return cleaned
+
+
 class ProjectRead(BaseModel):
     id: str
     key: str

@@ -61,7 +61,7 @@ class OrientationMatchParams(_StrictParams):
     compartment: str
     roi: tuple[float, float, float, float]
     correct_class: str = "CORRECT"
-    reversed_class: str = "REVERSED"
+    reversed_class: str | None = None
     min_conf: float = 0.5
 
 

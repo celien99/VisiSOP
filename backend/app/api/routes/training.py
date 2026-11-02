@@ -19,6 +19,7 @@ from app.api.schemas.training import (
     ModelRead,
     ProjectCreate,
     ProjectRead,
+    ProjectUpdate,
     StatsRead,
     VideoRead,
 )
@@ -189,6 +190,29 @@ def get_training_project(project_id: str, session: SessionDep) -> ProjectRead:
         return _project_read(training_service.get_project(session, project_id))
     except training_service.TrainingNotFound:
         raise HTTPException(status_code=404, detail="project not found") from None
+
+
+@router.patch(
+    "/projects/{project_id}",
+    response_model=ProjectRead,
+    name="update_training_project",
+)
+def update_training_project(
+    project_id: str, payload: ProjectUpdate, session: SessionDep
+) -> ProjectRead:
+    try:
+        project = training_service.update_project(
+            session,
+            project_id=project_id,
+            name=payload.name,
+            classes=payload.classes,
+        )
+    except training_service.TrainingNotFound:
+        raise HTTPException(status_code=404, detail="project not found") from None
+    except training_service.TrainingInvalid as exc:
+        raise _http(exc) from None
+    session.commit()
+    return _project_read(project)
 
 
 @router.post(
@@ -490,11 +514,14 @@ def get_active_model(project_key: str, session: SessionDep) -> ActiveModelRead:
     if found is None:
         raise HTTPException(status_code=404, detail="no active model")
     project, model = found
+    # The model artifact pins its own class names; project edits after
+    # training must not rewrite what the ONNX actually outputs.
+    classes = list(model.manifest.get("names", [])) or list(project.classes)
     return ActiveModelRead(
         id=model.id,
         project_key=project.key,
         version=model.version,
-        classes=list(project.classes),
+        classes=classes,
         metrics=dict(model.manifest.get("metrics", {})),
         onnx_url=f"/api/training/models/{model.id}/artifact",
         names_url=f"/api/training/models/{model.id}/names",
