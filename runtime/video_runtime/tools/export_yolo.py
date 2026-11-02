@@ -29,7 +29,11 @@ def main(argv: list[str] | None = None) -> int:
 
         model = YOLO(str(args.weights))
         names = getattr(model, "names", None) or {}
-        ordered = [names[index] for index in sorted(names)] if isinstance(names, dict) else list(names)
+        ordered = (
+            [names[index] for index in sorted(names)]
+            if isinstance(names, dict)
+            else list(names)
+        )
         args.names.parent.mkdir(parents=True, exist_ok=True)
         args.names.write_text("\n".join(ordered) + "\n", encoding="utf-8")
 
@@ -49,9 +53,7 @@ def main(argv: list[str] | None = None) -> int:
 
         import onnxruntime
 
-        onnxruntime.InferenceSession(
-            str(args.onnx), providers=["CPUExecutionProvider"]
-        )
+        onnxruntime.InferenceSession(str(args.onnx), providers=["CPUExecutionProvider"])
     except Exception as exc:  # export boundary: SDK error text varies
         print(f"export failed: {exc}", file=sys.stderr)
         return 1
