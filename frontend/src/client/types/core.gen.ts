@@ -403,6 +403,20 @@ export type ProjectRead = {
 };
 
 /**
+ * ProjectUpdate
+ */
+export type ProjectUpdate = {
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Classes
+     */
+    classes?: Array<string> | null;
+};
+
+/**
  * StatsRead
  */
 export type StatsRead = {
@@ -580,6 +594,36 @@ export type trainingGetTrainingProjectResponses = {
 
 export type trainingGetTrainingProjectResponse = trainingGetTrainingProjectResponses[keyof trainingGetTrainingProjectResponses];
 
+export type trainingUpdateTrainingProjectData = {
+    body: ProjectUpdate;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/training/projects/{project_id}';
+};
+
+export type trainingUpdateTrainingProjectErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingUpdateTrainingProjectError = trainingUpdateTrainingProjectErrors[keyof trainingUpdateTrainingProjectErrors];
+
+export type trainingUpdateTrainingProjectResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProjectRead;
+};
+
+export type trainingUpdateTrainingProjectResponse = trainingUpdateTrainingProjectResponses[keyof trainingUpdateTrainingProjectResponses];
+
 export type trainingListTrainingVideosData = {
     body?: never;
     path: {
@@ -673,6 +717,36 @@ export type trainingExtractTrainingVideoResponses = {
 };
 
 export type trainingExtractTrainingVideoResponse = trainingExtractTrainingVideoResponses[keyof trainingExtractTrainingVideoResponses];
+
+export type trainingDeleteTrainingVideoData = {
+    body?: never;
+    path: {
+        /**
+         * Video Id
+         */
+        video_id: string;
+    };
+    query?: never;
+    url: '/api/training/videos/{video_id}';
+};
+
+export type trainingDeleteTrainingVideoErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type trainingDeleteTrainingVideoError = trainingDeleteTrainingVideoErrors[keyof trainingDeleteTrainingVideoErrors];
+
+export type trainingDeleteTrainingVideoResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type trainingDeleteTrainingVideoResponse = trainingDeleteTrainingVideoResponses[keyof trainingDeleteTrainingVideoResponses];
 
 export type trainingListTrainingFramesData = {
     body?: never;

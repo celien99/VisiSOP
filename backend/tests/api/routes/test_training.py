@@ -216,6 +216,42 @@ def test_training_flow_and_model_activation(
     assert rejected.status_code == 422
 
 
+def test_delete_video_removes_frames_annotations_and_files(
+    client: TestClient,
+    training_store: TrainingStore,
+    clip: Path,
+) -> None:
+    project = _project(client)
+    video = _upload(client, project["id"], clip)
+    frames = client.post(
+        f"/api/training/videos/{video['id']}/extract", json={"fps": 5}
+    ).json()
+    client.put(
+        f"/api/training/frames/{frames[0]['id']}/annotations",
+        json={
+            "annotations": [
+                {"class_name": "remote", "x1": 0.1, "y1": 0.1, "x2": 0.5, "y2": 0.5}
+            ]
+        },
+    )
+
+    deleted = client.delete(f"/api/training/videos/{video['id']}")
+    assert deleted.status_code == 204
+
+    assert (
+        client.get(f"/api/training/videos/{video['id']}/frames").status_code == 404
+    )
+    stats = client.get(f"/api/training/projects/{project['id']}/stats").json()
+    assert stats["videos"] == 0
+    assert stats["frames"] == 0
+    assert stats["labeled_frames"] == 0
+    video_key = f"projects/remote/videos/{video['id']}.avi"
+    assert not (training_store.root / video_key).exists()
+    assert not (
+        training_store.root / f"projects/remote/frames/{video['id']}"
+    ).exists()
+
+
 def test_upload_rejects_unsupported_types(
     client: TestClient, training_store: TrainingStore
 ) -> None:

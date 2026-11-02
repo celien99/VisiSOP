@@ -1,3 +1,4 @@
+import shutil
 from datetime import datetime
 from typing import Any
 from uuid import uuid4
@@ -227,6 +228,39 @@ def extract_video(
     video.error = None
     session.flush()
     return frames
+
+
+def delete_video(session: Session, store: TrainingStore, *, video_id: str) -> None:
+    """Remove a video with its frames, annotations, and stored files."""
+    video = get_video(session, video_id)
+    project = get_project(session, video.project_id)
+    frames = list(
+        session.exec(
+            select(TrainingFrame).where(col(TrainingFrame.video_id) == video_id)
+        ).all()
+    )
+    frame_ids = [frame.id for frame in frames]
+    if frame_ids:
+        session.exec(
+            delete(TrainingAnnotation).where(
+                col(TrainingAnnotation.frame_id).in_(frame_ids)
+            )
+        )
+    session.exec(delete(TrainingFrame).where(col(TrainingFrame.video_id) == video_id))
+    session.delete(video)
+    session.flush()
+
+    keys = [video.storage_key]
+    for frame in frames:
+        keys.extend((frame.storage_key, frame.thumb_key))
+    for key in keys:
+        try:
+            store.resolve(key).unlink(missing_ok=True)
+        except OSError:
+            continue
+    frames_dir = store.resolve(f"{store.project_dir(project.key)}/frames/{video_id}")
+    if frames_dir.is_dir():
+        shutil.rmtree(frames_dir, ignore_errors=True)
 
 
 def list_frames(session: Session, video_id: str) -> list[tuple[TrainingFrame, int]]:

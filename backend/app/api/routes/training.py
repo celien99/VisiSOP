@@ -293,6 +293,15 @@ def extract_training_video(
     return [_frame_read(frame, 0) for frame in frames]
 
 
+@router.delete("/videos/{video_id}", status_code=204, name="delete_training_video")
+def delete_training_video(video_id: str, session: SessionDep) -> None:
+    try:
+        training_service.delete_video(session, _store(), video_id=video_id)
+    except training_service.TrainingNotFound:
+        raise HTTPException(status_code=404, detail="video not found") from None
+    session.commit()
+
+
 @router.get(
     "/videos/{video_id}/frames",
     response_model=list[FrameRead],
