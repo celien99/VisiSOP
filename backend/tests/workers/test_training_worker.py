@@ -1,6 +1,5 @@
 import json
 from datetime import datetime
-from pathlib import Path
 from uuid import uuid4
 
 import pytest
@@ -77,9 +76,7 @@ def test_successful_job_stores_the_model(
         run.onnx_path.write_bytes(b"onnx")
         run.names_path.write_text("remote\n", encoding="utf-8", newline="\n")
         run.metrics_path.write_text(
-            json.dumps(
-                {"metrics": {"mAP50": 0.9}, "names": ["remote"], "valid": True}
-            ),
+            json.dumps({"metrics": {"mAP50": 0.9}, "names": ["remote"], "valid": True}),
             encoding="utf-8",
         )
         run.progress_path.write_text(
@@ -102,7 +99,9 @@ def test_successful_job_stores_the_model(
     assert stored is not None
     assert stored.status == TrainingJobStatus.SUCCEEDED
     assert stored.progress == 100
-    model = db_session.exec(select(ModelArtifact)).one()
+    model = db_session.exec(
+        select(ModelArtifact).where(ModelArtifact.training_job_id == job.id)
+    ).one()
     assert model.active is False
     assert model.manifest["metrics"]["mAP50"] == 0.9
     assert (training_store.root / model.onnx_key).is_file()
@@ -147,7 +146,12 @@ def test_an_unvalidated_artifact_fails_the_job(
     assert stored is not None
     assert stored.status == TrainingJobStatus.FAILED
     assert "validation" in (stored.error or "")
-    assert db_session.exec(select(ModelArtifact)).all() == []
+    assert (
+        db_session.exec(
+            select(ModelArtifact).where(ModelArtifact.training_job_id == job.id)
+        ).all()
+        == []
+    )
 
 
 def test_failed_job_records_the_error(
@@ -166,4 +170,9 @@ def test_failed_job_records_the_error(
     assert stored is not None
     assert stored.status == TrainingJobStatus.FAILED
     assert "code 1" in (stored.error or "")
-    assert db_session.exec(select(ModelArtifact)).all() == []
+    assert (
+        db_session.exec(
+            select(ModelArtifact).where(ModelArtifact.training_job_id == job.id)
+        ).all()
+        == []
+    )
