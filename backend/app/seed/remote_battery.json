@@ -14,7 +14,7 @@
         "all": [
           {
             "event_type": "remote_present",
-            "min_confidence": 0.9,
+            "min_confidence": 0.83,
             "stable_for_ms": 500,
             "attributes": {"zone": {"eq": "battery_bench"}}
           }
@@ -33,14 +33,14 @@
         "all": [
           {
             "event_type": "batteries_installed",
-            "min_confidence": 0.9,
-            "stable_for_ms": 500,
+            "min_confidence": 0.63,
+            "stable_for_ms": 0,
             "attributes": {"count": {"gte": 2}, "slots": {"eq": 2}}
           },
           {
             "event_type": "battery_orientation_ok",
-            "min_confidence": 0.9,
-            "stable_for_ms": 500,
+            "min_confidence": 0.53,
+            "stable_for_ms": 0,
             "attributes": {"orientation": {"eq": "CORRECT"}}
           }
         ]
@@ -58,14 +58,14 @@
         "all": [
           {
             "event_type": "remote_lid_closed",
-            "min_confidence": 0.9,
-            "stable_for_ms": 500,
+            "min_confidence": 0.87,
+            "stable_for_ms": 0,
             "attributes": {"state": {"eq": "CLOSED"}}
           },
           {
             "event_type": "operator_hand_clear",
-            "min_confidence": 0.9,
-            "stable_for_ms": 800,
+            "min_confidence": 0.95,
+            "stable_for_ms": 0,
             "attributes": {"present": {"eq": false}}
           }
         ]

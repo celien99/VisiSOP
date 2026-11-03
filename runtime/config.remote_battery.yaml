@@ -42,10 +42,12 @@ bindings:
     primitive: count_threshold
     params:
       object_class: battery
+      # A battery is labelled either ``battery`` or its orientation class.
+      count_classes: [CORRECT, REVERSED]
       compartment: remote
       roi: [0.41, 0.55, 0.54, 0.84]
       slots: 2
-      min_conf: 0.5
+      min_conf: 0.29
     emit_interval_ms: 500
   - event_type: battery_orientation_ok
     primitive: orientation_match
@@ -55,7 +57,7 @@ bindings:
       roi: [0.41, 0.55, 0.54, 0.84]
       correct_class: CORRECT
       reversed_class: REVERSED
-      min_conf: 0.5
+      min_conf: 0.29
     emit_interval_ms: 500
   - event_type: remote_lid_closed
     primitive: state_classify
