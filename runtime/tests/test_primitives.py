@@ -76,8 +76,57 @@ def test_count_threshold_counts_only_instances_in_the_roi() -> None:
         "count": 2,
         "slots": 2,
     }
-    assert observation.confidence == 0.8
+    assert observation.confidence == pytest.approx(0.85)
     assert len(observation.boxes) == 2
+
+
+def test_count_threshold_includes_orientation_classes() -> None:
+    params = CountThresholdParams(
+        object_class="battery",
+        count_classes=("CORRECT", "REVERSED"),
+        compartment="remote",
+        roi=(0.0, 0.0, 1.0, 1.0),
+    )
+    perception = make_perception(
+        (
+            make_detection("battery", 0.9, (0.1, 0.1, 0.2, 0.2)),
+            make_detection("CORRECT", 0.8, (0.3, 0.3, 0.4, 0.4)),
+            make_detection("REVERSED", 0.7, (0.5, 0.5, 0.6, 0.6)),
+            make_detection("hand", 0.99, (0.7, 0.7, 0.8, 0.8)),
+        )
+    )
+    [observation] = CountThreshold().evaluate(perception, params)
+    assert observation.attributes["count"] == 3
+    assert observation.confidence == pytest.approx(0.8)
+
+
+def test_count_threshold_dedupes_overlapping_boxes() -> None:
+    params = CountThresholdParams(
+        object_class="battery",
+        count_classes=("CORRECT",),
+        compartment="remote",
+        roi=(0.0, 0.0, 1.0, 1.0),
+    )
+    perception = make_perception(
+        (
+            make_detection("battery", 0.9, (0.1, 0.1, 0.2, 0.2)),
+            make_detection("CORRECT", 0.6, (0.1, 0.1, 0.2, 0.2)),
+        )
+    )
+    [observation] = CountThreshold().evaluate(perception, params)
+    assert observation.attributes["count"] == 1
+    assert observation.confidence == pytest.approx(0.9)
+
+
+def test_count_threshold_reports_zero_without_hits() -> None:
+    params = CountThresholdParams(
+        object_class="battery",
+        compartment="remote",
+        roi=(0.0, 0.0, 0.5, 0.5),
+    )
+    [observation] = CountThreshold().evaluate(make_perception(()), params)
+    assert observation.attributes["count"] == 0
+    assert observation.confidence == 0.0
 
 
 def test_state_classify_picks_the_state_label() -> None:

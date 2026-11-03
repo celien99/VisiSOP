@@ -44,6 +44,10 @@ class ObjectPlacedParams(ObjectInZoneParams):
 
 class CountThresholdParams(_StrictParams):
     object_class: str
+    # Extra classes that also denote the same instance kind. The remote-battery
+    # labels a battery as either ``battery`` or its orientation class
+    # (``CORRECT`` / ``REVERSED``), never both.
+    count_classes: tuple[str, ...] = ()
     compartment: str
     roi: tuple[float, float, float, float]
     slots: int = 2
