@@ -1,9 +1,10 @@
 # B1 acceptance checklist
 
-Status: **not executed.** Phases 20–26 were implemented and unit-tested on
-macOS without the HIKROBOT camera, MVS SDK, or Windows network setup. Every
-row below still needs a pass/fail and a timestamp from a run on the demo
-machine, following `docs/runbooks/windows-demo.md`.
+Status: **checklist not executed.** Phases 20–26 were implemented and
+unit-tested on macOS without the HIKROBOT camera, MVS SDK, or Windows network
+setup. Camera spike artifacts from 2026-10-30/11-01 exist under
+`runtime/spike/`, but every row below still needs a pass/fail and a timestamp
+from a run on the demo machine, following `docs/runbooks/windows-demo.md`.
 
 Whoever runs it: copy this file's table into your report, fill `Result` with
 `PASS`/`FAIL` and `At` with the local time, and attach the evidence named in

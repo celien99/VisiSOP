@@ -1,15 +1,19 @@
 name: remote_battery
-version: 1
-status: untrained
+version: 3
+status: calibrated
 classes: [remote, battery, CORRECT, REVERSED, OPEN, CLOSED, hand]
-trained_on: null
-calibration_version: null
+trained_on: 2026-11-02
+calibration_version: 2026-11-03-recorded-clip
 event_metrics:
   precision: null
   recall: null
   latency_p95_ms: null
   false_completions: null
 notes: >
-  Fill this manifest after the first training run and keep the ONNX artifact
-  out of git. The runtime reads the model path and class names from
+  Trained on dataset v2 (148 frames; REVERSED has only 4 instances).
+  Thresholds were calibrated on one normal-install recording with
+  runtime/video_runtime/tools/calibrate.py; the 3x10 lab matrix and the
+  event-level precision/recall gates are still pending. Retraining the model
+  requires recalibration before auto-completion. The ONNX artifact stays out
+  of git; the runtime reads the model path and class names from
   config.remote_battery.yaml, not from this file.

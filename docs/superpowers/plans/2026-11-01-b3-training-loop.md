@@ -1,5 +1,9 @@
 # VisiSOP B3 — In-app training loop (record → label → train → activate)
 
+Status: **implemented and demo-verified on 2026-11-03**; see
+`docs/runbooks/acceptance-b3.md`. The 3x10 lab matrix and the event-level
+precision/recall gates remain pending.
+
 **Goal:** an operator records a correct SOP video, uploads it in the training
 page, the platform extracts frames, the operator draws boxes, exports a
 dataset, starts a GPU training job, and the runtime hot-swaps to the new model

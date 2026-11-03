@@ -1,6 +1,7 @@
 # B2 acceptance — perception primitives and the remote-battery SOP
 
-Status: **code complete, model untrained, lab matrix not executed.**
+Status: **code complete, model v3 trained and calibrated on one recorded
+clip, lab matrix still pending.**
 
 What is ready:
 
@@ -15,9 +16,15 @@ What is ready:
 
 What is not ready:
 
-- The `remote_battery` model (no labelled data yet; `runtime/models/remote_battery.yaml`
-  is `status: untrained`).
 - The lab matrix below; every row is `PENDING`.
+- Event-level precision/recall gates are not measured. Thresholds came from
+  one recorded normal-install clip, not a held-out set.
+- `REVERSED` has only 4 training instances, so the reversed-battery scenario
+  is not reliable yet.
+
+The model manifest is `runtime/models/remote_battery.yaml` (`status:
+calibrated`, version 3). A retrained model must be recalibrated with
+`video_runtime.tools.calibrate` before auto-completion.
 
 Whoever runs it: record the environment, copy the table into the report, fill
 `Result` with `PASS`/`FAIL` and `At` with the local time, and attach the
