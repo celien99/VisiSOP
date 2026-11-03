@@ -89,3 +89,29 @@ Then run the runtime with `config.remote_battery.yaml`.
 Use `eval/event_eval.py` to match predicted events to hand-labelled truth by
 type, key attributes, and a time window; duplicates inside the dedupe window
 count once. A model that misses a gate does **not** replace the demo path.
+
+## Calibration and replay
+
+`video_runtime.tools.calibrate` runs the runtime's own bindings and primitives
+over a recorded clip, so its numbers match what the SOP engine will see:
+
+```bash
+cd runtime
+uv run python -m video_runtime.tools.calibrate \
+  --config config.remote_battery.yaml \
+  --video data/remote-battery/clips/remote_battery-normal.avi \
+  --model /path/to/best.onnx --names /path/to/names.txt \
+  --sop ../backend/app/seed/remote_battery.json --apply
+```
+
+It prints per-class confidence, per-event counts, ROI coverage, and a threshold
+sweep for every SOP completion condition. `--apply` rewrites the SOP
+`min_confidence` and the runtime binding `min_conf` in place, preserving file
+formatting and writing a timestamped `*.bak` first. ROI values are only
+reported; adjust them by hand after checking the coverage numbers.
+
+To replay the SOP without the camera, copy a normal-install run to
+`data/remote-battery/clips/remote_battery-normal.avi` (gitignored), seed the
+SOP, then start the runtime with `config.remote_battery.replay.yaml`.
+Keep the accept window in mind: seed and replay must happen within
+`EXECUTION_ACCEPT_WINDOW_MS` (10 minutes by default).
