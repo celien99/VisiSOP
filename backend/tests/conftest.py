@@ -1,13 +1,17 @@
 import json
+import re
 from collections.abc import Callable, Generator
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
+from alembic import command
+from alembic.config import Config
 from contracts.events import ModelRef, VisionEvent
 from fastapi.testclient import TestClient
 from PIL import Image
-from sqlalchemy.engine import Connection
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import Connection, Engine, URL, make_url
 from sqlmodel import Session
 
 from app.api.deps import get_db
@@ -17,7 +21,6 @@ from app.application.alarm_service import upsert_alarm
 from app.application.runtime_registry import runtime_registry
 from app.application.sop_service import create_sop, publish_sop
 from app.core.config import settings
-from app.core.db import engine
 from app.main import app
 from app.models import (
     Alarm,
@@ -29,6 +32,55 @@ from app.models import (
 from contracts.enums import AlarmCategory, AlarmSeverity, CameraRole
 
 DEMO_SOP_PATH = Path(__file__).parents[1] / "app" / "seed" / "bottle_transfer.json"
+BACKEND_DIR = Path(__file__).parents[1]
+_TEST_DATABASE_SUFFIX = "_test"
+
+
+def _test_database_url() -> tuple[URL, URL]:
+    """The dev database URL and its isolated ``*_test`` sibling."""
+    url = make_url(str(settings.DATABASE_URL))
+    if not url.database or not re.fullmatch(r"[A-Za-z0-9_]+", url.database):
+        raise RuntimeError(f"cannot derive a test database from {url!r}")
+    return url, url.set(database=f"{url.database}{_TEST_DATABASE_SUFFIX}")
+
+
+def _recreate_database(url: URL, test_url: URL) -> None:
+    name = test_url.database
+    admin = create_engine(url.set(database="postgres"), isolation_level="AUTOCOMMIT")
+    try:
+        with admin.connect() as connection:
+            connection.execute(text(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)'))
+            connection.execute(text(f'CREATE DATABASE "{name}"'))
+    finally:
+        admin.dispose()
+
+
+def _migrate(test_url: URL) -> None:
+    original = settings.DATABASE_URL
+    setattr(
+        settings, "DATABASE_URL", test_url.render_as_string(hide_password=False)
+    )
+    try:
+        config = Config(str(BACKEND_DIR / "alembic.ini"))
+        config.set_main_option(
+            "script_location", str(BACKEND_DIR / "app" / "alembic")
+        )
+        command.upgrade(config, "head")
+    finally:
+        setattr(settings, "DATABASE_URL", original)
+
+
+@pytest.fixture(scope="session")
+def test_engine() -> Generator[Engine]:
+    """A fresh migrated database per test session, never the dev database."""
+    url, test_url = _test_database_url()
+    _recreate_database(url, test_url)
+    _migrate(test_url)
+    engine = create_engine(test_url, pool_pre_ping=True)
+    try:
+        yield engine
+    finally:
+        engine.dispose()
 
 
 @pytest.fixture
@@ -44,10 +96,10 @@ def _reset_runtime_registry() -> Generator[None]:
 
 
 @pytest.fixture
-def db_connection() -> Generator[Connection]:
-    # shortcut: tests share one connection/session; upgrade to a per-test database
-    # when parallel tests arrive.
-    with engine.connect() as connection:
+def db_connection(test_engine: Engine) -> Generator[Connection]:
+    # Tests share one connection/session; the whole session uses a disposable
+    # ``*_test`` database so a populated dev database cannot break fixtures.
+    with test_engine.connect() as connection:
         transaction = connection.begin()
         yield connection
         transaction.rollback()
