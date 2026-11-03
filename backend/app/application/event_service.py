@@ -10,6 +10,7 @@ from contracts.catalog import (
 )
 from contracts.enums import ProcessingResult, ReasonCode
 from contracts.events import RoutedSOPEvent, VisionEvent
+from sqlalchemy import text
 from sqlmodel import Session, col, select
 
 from app.api.schemas.event import EventRead
@@ -180,6 +181,18 @@ def resolve_execution(
         "OUTSIDE_WINDOW",
         tuple(execution.id for execution in bound),
         ReasonCode.LATE_EVENT,
+    )
+
+
+def _lock_event(session: Session, event_id: str) -> None:
+    """Serialize duplicate deliveries of one event id (PostgreSQL).
+
+    The publisher retries on timeouts; without this lock two in-flight
+    deliveries can both miss the receipt and race on the primary key.
+    """
+    session.execute(
+        text("SELECT pg_advisory_xact_lock(hashtext(:event_id)::bigint)"),
+        {"event_id": event_id},
     )
 
 
@@ -480,6 +493,7 @@ def _apply_resolved(
 
 
 def ingest_event(session: Session, event: VisionEvent, now: datetime) -> IngestResult:
+    _lock_event(session, event.event_id)
     existing = session.get(EventProcessingReceipt, event.event_id)
     if existing is not None:
         return _result_from_receipt(existing, now, duplicate=True)
