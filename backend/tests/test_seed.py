@@ -10,14 +10,40 @@ from app.scripts.seed_demo import seed_demo
 def test_seed_is_idempotent(db_session: Session, now: datetime) -> None:
     first = seed_demo(db_session, now)
     second = seed_demo(db_session, now)
+    assert first.sop_key == second.sop_key == "bottle_transfer"
     assert first.station_id == second.station_id == "st-01"
     assert first.camera_id == second.camera_id == "cam-01"
     assert first.sop_version_id == second.sop_version_id
     assert first.created_execution is True
     assert second.created_execution is False
-    assert (
-        db_session.exec(select(func.count()).select_from(SOPDefinition)).one() == 1
-    )
+    assert db_session.exec(select(func.count()).select_from(SOPDefinition)).one() == 2
+
+
+def test_seed_publishes_both_sops_and_activates_the_requested_one(
+    db_session: Session, now: datetime
+) -> None:
+    result = seed_demo(db_session, now, active_sop="remote_battery")
+
+    keys = {definition.key for definition in db_session.exec(select(SOPDefinition))}
+    assert keys == {"bottle_transfer", "remote_battery"}
+    assert result.sop_key == "remote_battery"
+    execution = db_session.get(SOPExecution, result.execution_id)
+    assert execution is not None
+    assert execution.sop_version_id == result.sop_version_id
+
+
+def test_switching_the_active_sop_aborts_the_previous_execution(
+    db_session: Session, now: datetime
+) -> None:
+    first = seed_demo(db_session, now)
+    second = seed_demo(db_session, now, active_sop="remote_battery")
+
+    db_session.expire_all()
+    assert first.execution_id != second.execution_id
+    previous = db_session.get(SOPExecution, first.execution_id)
+    current = db_session.get(SOPExecution, second.execution_id)
+    assert previous is not None and previous.status == "ABORTED"
+    assert current is not None and current.status == "RUNNING"
 
 
 def test_seed_replaces_an_execution_past_its_accept_window(
@@ -31,5 +57,7 @@ def test_seed_replaces_an_execution_past_its_accept_window(
     assert second.created_execution is True
     assert second.execution_id != first.execution_id
     db_session.expire_all()
-    assert db_session.get(SOPExecution, first.execution_id).status == "ABORTED"
-    assert db_session.get(SOPExecution, second.execution_id).status == "RUNNING"
+    previous = db_session.get(SOPExecution, first.execution_id)
+    current = db_session.get(SOPExecution, second.execution_id)
+    assert previous is not None and previous.status == "ABORTED"
+    assert current is not None and current.status == "RUNNING"
