@@ -42,7 +42,7 @@ def test_catalog_snapshot_is_read_only() -> None:
 def test_battery_events_are_primitive_instances() -> None:
     spec = get_event_type("batteries_installed")
     assert spec.primitive_id == "count_threshold"
-    assert spec.confidence_semantics == "uncalibrated"
+    assert spec.confidence_semantics == "calibrated"
     assert spec.params_schema is get_primitive("count_threshold").params_model
     attr = validate_attributes(
         "batteries_installed",

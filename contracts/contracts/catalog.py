@@ -195,13 +195,16 @@ register_event_type(
 )
 
 # Remote-battery SOP: the first primitive-backed procedure.
+# Calibrated against the v3 model on a recorded normal-install clip with
+# runtime/video_runtime/tools/calibrate.py. The full 3x10 lab matrix is still
+# pending, so a re-trained model must be recalibrated before production use.
 register_event_type(
     EventTypeSpec(
         event_type="remote_present",
         attributes_model=_RemotePresentAttributes,
         primitive_id="object_present",
         correlation_key_template="{station_id}:{attributes.zone}:remote",
-        confidence_semantics="uncalibrated",
+        confidence_semantics="calibrated",
     )
 )
 register_event_type(
@@ -210,7 +213,7 @@ register_event_type(
         attributes_model=_BatteriesInstalledAttributes,
         primitive_id="count_threshold",
         correlation_key_template="{station_id}:{attributes.compartment}:batteries",
-        confidence_semantics="uncalibrated",
+        confidence_semantics="calibrated",
     )
 )
 register_event_type(
@@ -219,7 +222,7 @@ register_event_type(
         attributes_model=_BatteryOrientationAttributes,
         primitive_id="orientation_match",
         correlation_key_template="{station_id}:{attributes.compartment}:orientation",
-        confidence_semantics="uncalibrated",
+        confidence_semantics="calibrated",
     )
 )
 register_event_type(
@@ -227,7 +230,7 @@ register_event_type(
         event_type="remote_lid_closed",
         attributes_model=_LidStateAttributes,
         primitive_id="state_classify",
-        confidence_semantics="uncalibrated",
+        confidence_semantics="calibrated",
     )
 )
 register_event_type(
@@ -236,6 +239,6 @@ register_event_type(
         attributes_model=_HandClearAttributes,
         primitive_id="object_absent",
         correlation_key_template="{station_id}:{attributes.zone}:hand",
-        confidence_semantics="uncalibrated",
+        confidence_semantics="calibrated",
     )
 )
