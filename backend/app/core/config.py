@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     MODEL_POLL_S: int = 10
     MAX_VIDEO_MB: int = 512
     RUNTIME_PROJECT_DIR: Path = Path("../runtime")
-    TRAINING_BASE_MODEL: str = "models/yolo11n.pt"
+    TRAINING_BASE_MODEL: str = "artifacts/yolo11n.pt"
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod

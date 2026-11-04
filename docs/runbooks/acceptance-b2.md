@@ -22,7 +22,7 @@ What is not ready:
 - `REVERSED` has only 4 training instances, so the reversed-battery scenario
   is not reliable yet.
 
-The model manifest is `runtime/models/remote_battery.yaml` (`status:
+The model manifest is `runtime/artifacts/remote_battery.yaml` (`status:
 calibrated`, version 3). A retrained model must be recalibrated with
 `video_runtime.tools.calibrate` before auto-completion.
 
@@ -75,7 +75,7 @@ uv run python -m video_runtime.tools.record_clips \
   --config config.demo.yaml --seconds 30 --fps 5 \
   --out data/remote-battery/raw/op1-run1
 
-# 2. Label, train, export, fill runtime/models/remote_battery.yaml
+# 2. Label, train, export, fill runtime/artifacts/remote_battery.yaml
 # 3. Run the battery bindings
 uv run python -m video_runtime.main --config config.remote_battery.yaml
 

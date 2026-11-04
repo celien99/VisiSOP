@@ -6,7 +6,7 @@ import pytest
 from video_runtime.inference.decode import decode_yolo_output, letterbox, nms
 
 COCO_NAMES = (
-    (Path(__file__).parents[1] / "models" / "coco.names").read_text().splitlines()
+    (Path(__file__).parents[1] / "artifacts" / "coco.names").read_text().splitlines()
 )
 
 

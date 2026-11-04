@@ -7,7 +7,7 @@ One Windows 10/11 machine runs four things:
 | PostgreSQL (Docker Desktop) | 5432 | `docker compose up -d db` |
 | FastAPI + workers | 8000 | `uv run fastapi dev` |
 | Vite (optional; FastAPI serves the built SPA) | 5173 | `bun run dev` |
-| Video runtime | 8001 | `uv run python -m video_runtime.main --config config.demo.yaml` |
+| Video runtime | 8001 | `uv run python -m video_runtime.main --config config.remote_battery.yaml` (or `config.demo.yaml` for the bottle demo) |
 
 Run every shell command in **Git Bash** from the repository root unless a
 `cd` says otherwise.
@@ -77,7 +77,7 @@ FastAPI origin at `http://localhost:8000` (it serves the built SPA).
 
 ```bash
 cd backend
-uv run python -m app.scripts.seed_demo --sop remote_battery
+uv run python -m app.scripts.seed_sops --sop remote_battery
 ```
 
 Use `--sop bottle_transfer` (the default) for the bottle demo. The seed
@@ -106,8 +106,8 @@ The ONNX model is not committed. In `runtime/`:
 uv run --with "ultralytics[export]" yolo export model=yolo11n.pt format=onnx opset=17 imgsz=640 simplify=False
 ```
 
-Copy the file to `runtime/models/yolo11n.onnx`. Class names are already in
-`runtime/models/coco.names` (bottle is index 39). The runtime decodes the raw
+Copy the file to `runtime/artifacts/yolo11n.onnx`. Class names are already in
+`runtime/artifacts/coco.names` (bottle is index 39). The runtime decodes the raw
 `[1, 84, 8400]` output itself, so NMS must not be baked into the export.
 
 ## 9. Video runtime

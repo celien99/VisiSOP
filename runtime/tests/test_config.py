@@ -19,8 +19,8 @@ camera:
     path: clips/demo.mp4
     loop: false
 model:
-  onnx_path: models/yolo11n.onnx
-  class_names_path: models/coco.names
+  onnx_path: artifacts/yolo11n.onnx
+  class_names_path: artifacts/coco.names
 backend:
   base_url: http://127.0.0.1:8000/api
 bindings:
@@ -48,7 +48,7 @@ def test_load_config_uses_defaults_and_resolves_relative_paths(
     assert isinstance(config.camera.source, FileSourceConfig)
     assert config.camera.source.path == config_dir / "clips" / "demo.mp4"
     assert config.camera.source.loop is False
-    assert config.model.onnx_path == config_dir / "models" / "yolo11n.onnx"
+    assert config.model.onnx_path == config_dir / "artifacts" / "yolo11n.onnx"
     assert config.model.input_size == 640
     assert config.backend.timeout_ms == 2000
     assert config.preview.port == 8001
@@ -104,9 +104,9 @@ def test_backend_model_source_requires_a_project_key(tmp_path, monkeypatch) -> N
     path = tmp_path / "demo.yaml"
     path.write_text(
         FILE_CONFIG.replace(
-            "model:\n  onnx_path: models/yolo11n.onnx\n  class_names_path: models/coco.names",
-            "model:\n  source: backend\n  onnx_path: models/yolo11n.onnx\n"
-            "  class_names_path: models/coco.names",
+            "model:\n  onnx_path: artifacts/yolo11n.onnx\n  class_names_path: artifacts/coco.names",
+            "model:\n  source: backend\n  onnx_path: artifacts/yolo11n.onnx\n"
+            "  class_names_path: artifacts/coco.names",
         ),
         encoding="utf-8",
     )
@@ -115,10 +115,10 @@ def test_backend_model_source_requires_a_project_key(tmp_path, monkeypatch) -> N
 
     path.write_text(
         FILE_CONFIG.replace(
-            "model:\n  onnx_path: models/yolo11n.onnx\n  class_names_path: models/coco.names",
+            "model:\n  onnx_path: artifacts/yolo11n.onnx\n  class_names_path: artifacts/coco.names",
             "model:\n  source: backend\n  project_key: remote\n"
-            "  onnx_path: models/yolo11n.onnx\n"
-            "  class_names_path: models/coco.names",
+            "  onnx_path: artifacts/yolo11n.onnx\n"
+            "  class_names_path: artifacts/coco.names",
         ),
         encoding="utf-8",
     )

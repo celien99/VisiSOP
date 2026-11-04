@@ -70,9 +70,9 @@ Train YOLO11n on the labelled set, export ONNX (opset 17, `imgsz=640`, no NMS),
 and write the manifest:
 
 ```
-runtime/models/remote_battery.onnx   # gitignored
-runtime/models/remote_battery.names  # one class name per line
-runtime/models/remote_battery.yaml   # name/version/classes/calibration/metrics
+runtime/artifacts/remote_battery.onnx   # gitignored
+runtime/artifacts/remote_battery.names  # one class name per line
+runtime/artifacts/remote_battery.yaml   # name/version/classes/calibration/metrics
 ```
 
 Then run the runtime with `config.remote_battery.yaml`.

@@ -8,7 +8,7 @@ from conftest import make_frame
 from video_runtime.inference.onnx_yolo import OnnxYoloBackend
 
 COCO_NAMES = (
-    (Path(__file__).parents[1] / "models" / "coco.names").read_text().splitlines()
+    (Path(__file__).parents[1] / "artifacts" / "coco.names").read_text().splitlines()
 )
 
 

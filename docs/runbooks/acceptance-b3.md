@@ -64,7 +64,7 @@ instead of event timestamps.
 # 1. backend (8000) and a disposable test database are not required here;
 #    the replay uses the dev database.
 cd backend
-uv run python -m app.scripts.seed_demo --sop remote_battery
+uv run python -m app.scripts.seed_sops --sop remote_battery
 
 # 2. copy a normal-install clip (gitignored)
 #    runtime/data/remote-battery/clips/remote_battery-normal.avi

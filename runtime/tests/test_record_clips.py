@@ -30,8 +30,8 @@ camera:
     path: {clip.as_posix()}
     loop: true
 model:
-  onnx_path: models/yolo11n.onnx
-  class_names_path: models/coco.names
+  onnx_path: artifacts/yolo11n.onnx
+  class_names_path: artifacts/coco.names
 backend:
   base_url: http://127.0.0.1:8000/api
 """,

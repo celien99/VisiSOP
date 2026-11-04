@@ -83,16 +83,29 @@ def station_read(station: Station) -> StationRead:
     )
 
 
+def _camera_urls(camera: Camera) -> tuple[str | None, str | None]:
+    """Derive preview URLs from the registered runtime when it is known."""
+    entry = runtime_registry.get(camera.runtime_id)
+    if entry is None or camera.id not in entry.registration.camera_ids:
+        return camera.preview_url, camera.snapshot_url
+    base = entry.registration.preview_base_url
+    if base is None:
+        return camera.preview_url, camera.snapshot_url
+    base = base.rstrip("/")
+    return f"{base}/stream/{camera.id}", f"{base}/snapshot/{camera.id}"
+
+
 def camera_read(camera: Camera, now: datetime) -> CameraRead:
     status = runtime_registry.camera(camera.id, now)
+    preview_url, snapshot_url = _camera_urls(camera)
     return CameraRead(
         id=camera.id,
         code=camera.code,
         name=camera.name,
         runtime_id=camera.runtime_id,
         source_type=camera.source_type,
-        preview_url=camera.preview_url,
-        snapshot_url=camera.snapshot_url,
+        preview_url=preview_url,
+        snapshot_url=snapshot_url,
         health=status.status if status is not None else HealthStatus.UNKNOWN,
         last_frame_at=status.last_frame_at if status is not None else None,
         created_at=camera.created_at,

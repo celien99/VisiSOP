@@ -1,3 +1,5 @@
+"""Publish the demo SOPs and leave one execution active for the selected one."""
+
 import argparse
 import json
 import sys
@@ -67,7 +69,8 @@ def _station_and_camera(session: Session, now: datetime) -> None:
                 created_at=now,
             )
         )
-    if session.get(Camera, "cam-01") is None:
+    camera = session.get(Camera, "cam-01")
+    if camera is None:
         session.add(
             Camera(
                 id="cam-01",
@@ -76,11 +79,16 @@ def _station_and_camera(session: Session, now: datetime) -> None:
                 runtime_id="runtime-01",
                 source_type="mvs",
                 source_config={"serial": "demo"},
-                preview_url="http://127.0.0.1:8001/stream/cam-01",
-                snapshot_url="http://127.0.0.1:8001/snapshot/cam-01",
                 created_at=now,
             )
         )
+    else:
+        # Preview URLs come from the registered runtime; keep the row in sync
+        # with the source the runtime actually uses.
+        camera.source_type = "mvs"
+        camera.preview_url = None
+        camera.snapshot_url = None
+        session.add(camera)
     session.flush()
     binding = session.exec(
         select(StationCameraBinding).where(
@@ -157,7 +165,7 @@ def _active_on_station(session: Session) -> list[SOPExecution]:
     )
 
 
-def seed_demo(
+def seed_sops(
     session: Session, now: datetime, active_sop: str = DEFAULT_SOP_KEY
 ) -> SeedResult:
     """Publish every seed SOP and leave one execution active for ``active_sop``.
@@ -225,7 +233,7 @@ def main() -> None:
     )
     args = parser.parse_args()
     with Session(engine) as session:
-        result = seed_demo(session, datetime.now(UTC), active_sop=args.sop)
+        result = seed_sops(session, datetime.now(UTC), active_sop=args.sop)
     print(  # noqa: T201
         f"sop={result.sop_key} station={result.station_id} "
         f"camera={result.camera_id} sop_version={result.sop_version_id} "

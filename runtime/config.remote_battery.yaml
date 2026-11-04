@@ -15,8 +15,8 @@ model:
   source: backend
   project_key: remote_battery
   poll_s: 10
-  onnx_path: models/cache/remote_battery.onnx
-  class_names_path: models/cache/remote_battery.names
+  onnx_path: artifacts/cache/remote_battery.onnx
+  class_names_path: artifacts/cache/remote_battery.names
   input_size: 640
   confidence: 0.25
   iou: 0.45

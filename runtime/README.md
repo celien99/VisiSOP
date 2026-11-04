@@ -45,7 +45,7 @@ the current detections, tracks, and observations as JSON.
 - The YOLO model is not committed. Export it once:
   `uv run --with "ultralytics[export]" yolo export model=yolo11n.pt format=onnx opset=17 imgsz=640 simplify=False`
   (no NMS baked in; the runtime decodes and applies NMS) and place it at
-  `runtime/models/yolo11n.onnx`. Class names live in `models/coco.names`.
+  `runtime/artifacts/yolo11n.onnx`. Class names live in `artifacts/coco.names`.
 
 Windows setup, camera calibration, and acceptance live in
 `../docs/runbooks/windows-demo.md`.
